@@ -2,12 +2,13 @@
 
 use super::types::{EmitterDirection, PlaneNormal};
 use crate::codes;
-use crate::derived::{L0, L1, LEGACY, STRICT, hand};
-use crate::read::{KEPT, Reader, defaults, derived_node};
+use crate::derived::{KEPT, L0, L1, LEGACY, STRICT, legacy, line, unread};
+use crate::read::defaults;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::molang::Molang;
+use bedrock_addon_core::schema::FromJson;
 use bedrock_addon_core::schema::{self, Schema};
 use facet::Facet;
 
@@ -66,7 +67,7 @@ pub struct EmitterShapeBox {
     /// Particles appear on the surface only (JSON `surface_only`; default `false`).
     pub surface_only: Option<bool>,
     /// The direction particles leave in (JSON `direction`).
-    #[facet(schema::read_with = hand)]
+    #[facet(schema::read_with = EmitterDirection::from_json)]
     pub direction: Option<EmitterDirection>,
     /// Unknown members.
     #[facet(skip_deserializing)]
@@ -86,19 +87,20 @@ fn box_shape(shape: &mut EmitterShapeBox, node: &Node<'_>, read: &mut Read<'_>) 
         .value()
         .as_object()
         .is_some_and(|object| object.contains_key("half_dimensions"));
-    let r = &mut Reader::of(node, read);
-    if !r.legacy() || written {
+    if !legacy(read) || written {
         return;
     }
     // The game writes this line to the content log at the error level.
-    r.key("half_dimensions", |r| {
-        r.content_error(&codes::OFFSET_REQUIRED);
-    });
+    line(
+        read,
+        &node.path().child("half_dimensions"),
+        &codes::OFFSET_REQUIRED,
+    );
     if shape.surface_only.take().is_some() {
-        r.unread("surface_only");
+        unread(read, &node.path().child("surface_only"));
     }
     if shape.direction.take().is_some() {
-        r.unread("direction");
+        unread(read, &node.path().child("direction"));
     }
 }
 
@@ -115,7 +117,7 @@ pub struct EmitterShapeSphere {
     /// Particles appear on the surface only (JSON `surface_only`; default `false`).
     pub surface_only: Option<bool>,
     /// The direction particles leave in (JSON `direction`).
-    #[facet(schema::read_with = hand)]
+    #[facet(schema::read_with = EmitterDirection::from_json)]
     pub direction: Option<EmitterDirection>,
     /// Unknown members.
     #[facet(skip_deserializing)]
@@ -141,10 +143,10 @@ pub struct EmitterShapeDisc {
     /// Particles appear on the edge only (JSON `surface_only`; default `false`).
     pub surface_only: Option<bool>,
     /// The direction particles leave in (JSON `direction`).
-    #[facet(schema::read_with = hand)]
+    #[facet(schema::read_with = EmitterDirection::from_json)]
     pub direction: Option<EmitterDirection>,
     /// The normal of the disc's plane (JSON `plane_normal`; default `[0, 1, 0]`).
-    #[facet(schema::read_with = hand)]
+    #[facet(schema::read_with = PlaneNormal::from_json)]
     pub plane_normal: Option<PlaneNormal>,
     /// Unknown members.
     #[facet(skip_deserializing)]
@@ -187,7 +189,7 @@ pub struct EmitterShapeEntityAabb {
     /// Particles appear on the surface only (JSON `surface_only`; default `false`).
     pub surface_only: Option<bool>,
     /// The direction particles leave in (JSON `direction`).
-    #[facet(schema::read_with = hand)]
+    #[facet(schema::read_with = EmitterDirection::from_json)]
     pub direction: Option<EmitterDirection>,
     /// Unknown members.
     #[facet(skip_deserializing)]
@@ -197,12 +199,3 @@ pub struct EmitterShapeEntityAabb {
 defaults!(EmitterShapeEntityAabb {
     surface_only: bool = "surface_only", false;
 });
-
-derived_node!(
-    EmitterShapePoint,
-    EmitterShapeBox,
-    EmitterShapeSphere,
-    EmitterShapeDisc,
-    EmitterShapeCustom,
-    EmitterShapeEntityAabb,
-);

@@ -10,7 +10,7 @@ mod appearance;
 mod emitter;
 mod particle;
 mod shape;
-mod types;
+pub(crate) mod types;
 
 pub use appearance::{
     DirectionMode, DirectionSettings, Flipbook, ParticleAppearanceBillboard,
@@ -40,13 +40,15 @@ use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_derive::Components;
 
 use super::codes;
+use super::derived::{kit_read, legacy, legacy_spec, note, object, walk_in};
 use super::history::ParticleFamily;
-use super::read::{Era, Node, Opt, Reader, Writer};
-use bedrock_addon_core::diagnostic::{Code, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::document::Component;
+use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
+use bedrock_addon_core::molang::MolangVisitor;
+use bedrock_addon_core::schema::{self, FromJson};
 use bedrock_addon_core::versioning::ConvertMode;
 
 // The game looks a component name up in one registry and compares no version, and the
@@ -151,12 +153,6 @@ pub enum ParticleComponent {
     ParticleMotionParametric(ParticleMotionParametric),
 }
 
-impl MolangFields for ParticleInitialSpeed {
-    fn visit_molang(&mut self, v: &mut MolangVisitor<'_>) {
-        self.walk(Era::Cereal, Opt::NONE, v);
-    }
-}
-
 /// What the legacy parser does with a component whose value it cannot read at all.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Unreadable {
@@ -207,26 +203,30 @@ macro_rules! each {
 }
 
 /// One typed component read from its value; `None` when the 1.20.80 reader refused it.
-fn typed<T>(value: &Value, r: &mut Reader<'_>, unreadable: Unreadable) -> Option<ParticleComponent>
+fn typed<T>(
+    node: &Node<'_>,
+    read: &mut Read<'_>,
+    unreadable: Unreadable,
+) -> Option<ParticleComponent>
 where
-    T: Node + Into<ParticleComponent>,
+    T: FromJson + Default + Into<ParticleComponent>,
 {
-    let o = match unreadable {
-        Unreadable::Line => Opt::NONE.wrong(&codes::NO_DATA_FIELDS),
-        Unreadable::Silent | Unreadable::Own => Opt::NONE,
+    let legacy = legacy(read);
+    let read_value = match unreadable {
+        Unreadable::Line => object::<T>(node, read, Some(&codes::NO_DATA_FIELDS)),
+        // The game says nothing and keeps every default; what the author wrote there is not
+        // read, which is noted at the component.
+        Unreadable::Silent if legacy && !node.value().is_object() => {
+            note(read, node.path(), &core_codes::INVALID_TYPE);
+            None
+        }
+        Unreadable::Silent => object::<T>(node, read, None),
+        Unreadable::Own => T::from_json(node, read),
     };
-    let read = if unreadable == Unreadable::Silent && r.legacy() && !value.is_object() {
-        // The game says nothing and keeps every default; what the author wrote there is
-        // not read, which is noted at the component.
-        r.push(Code::from(&core_codes::INVALID_TYPE), Severity::Info);
-        None
-    } else {
-        T::read(value, r, o)
-    };
-    match read {
+    match read_value {
         Some(component) => Some(component.into()),
         // The legacy parser keeps the component, with every field at its default.
-        None if r.legacy() => Some(T::fallback(o).into()),
+        None if legacy => Some(T::default().into()),
         None => None,
     }
 }
@@ -239,13 +239,13 @@ where
 )]
 pub(crate) fn read_named(
     name: &str,
-    value: &Value,
-    r: &mut Reader<'_>,
+    node: &Node<'_>,
+    read: &mut Read<'_>,
 ) -> Option<Option<ParticleComponent>> {
     macro_rules! dispatch {
         ($($ty:ident => $unreadable:ident,)*) => {
             $(if name == <$ty as Component>::NAME {
-                return Some(typed::<$ty>(value, r, Unreadable::$unreadable));
+                return Some(typed::<$ty>(node, read, Unreadable::$unreadable));
             })*
         };
     }
@@ -295,28 +295,37 @@ where
     T: Component<Set = ParticleComponent>,
 {
     let value = crate::read::value_of(slice.text).ok()?;
-    let era = match mode {
-        ConvertMode::Lenient => Era::Legacy,
-        ConvertMode::Strict => Era::Cereal,
-    };
-    let mut r =
-        Reader::new(era, cx.molang_version, JsonPath::new(), d).grading(cx.grade(Class::Unknown));
-    read_named(T::NAME, &value, &mut r).flatten()
+    let legacy = mode == ConvertMode::Lenient;
+    let mut read = kit_read(legacy, cx.molang_version, cx.grade(Class::Unknown), d);
+    let root = Node::new(&value, JsonPath::new());
+    schema::read_document::<Named<T>>(&root, &mut read).map(|named| named.0)
 }
 
-/// One typed component as JSON.
+/// The component `T` names, read by its row of the dispatch, as a root the read's machinery
+/// takes (`schema::read_document`).
+struct Named<T>(ParticleComponent, std::marker::PhantomData<T>);
+
+impl<T: Component<Set = ParticleComponent>> FromJson for Named<T> {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let component = read_named(T::NAME, node, read).flatten()?;
+        Some(Self(component, std::marker::PhantomData))
+    }
+}
+
+/// One typed component as JSON, at `at` in a document of the era.
 pub(crate) fn write_component(
     component: &ParticleComponent,
-    w: &mut Writer,
+    legacy: bool,
+    at: &JsonPath,
 ) -> Result<Value, EncodeError> {
-    each!(component, c => c.write(w))
+    each!(component, c => crate::write::json(c, legacy, at))
 }
 
-/// Hands a component's Molang fields to the walk under `era`.
-pub(crate) fn walk_component(
-    component: &mut ParticleComponent,
-    era: Era,
-    v: &mut MolangVisitor<'_>,
-) {
-    each!(component, c => c.walk(era, Opt::NONE, v));
+/// Hands a component of a legacy document to the walk: the speed of
+/// `particle_initial_speed` under the legacy parser's default, as a leaf read by hand.
+pub(crate) fn walk_legacy(component: &mut ParticleComponent, v: &mut MolangVisitor<'_>) {
+    match component {
+        ParticleComponent::ParticleInitialSpeed(speed) => speed.walk_under(&legacy_spec(0.0), v),
+        component => each!(component, c => walk_in(c, true, v)),
+    }
 }

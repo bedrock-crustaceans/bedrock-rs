@@ -112,7 +112,7 @@ pub struct Description {
     /// The effect's identifier, as other files name it (JSON `identifier`, required).
     #[facet(
         default = ParticleId::parse(String::new()),
-        schema::read_with = derived::hand,
+        schema::read_with = read::identifier,
         schema::era(derived::STRICT, missing = core_codes::MISSING_REQUIRED_FIELD)
     )]
     pub identifier: ParticleId,
@@ -150,8 +150,6 @@ pub struct BasicRenderParameters {
     #[facet(skip_deserializing)]
     pub extra: bedrock_addon_core::document::UnknownMembers,
 }
-
-read::derived_node!(Description, BasicRenderParameters);
 
 impl Family for ParticleFamily {
     const NAME: &'static str = "particle";

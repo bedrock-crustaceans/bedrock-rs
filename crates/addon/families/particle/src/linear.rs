@@ -5,9 +5,10 @@
 //! output is dropped after it stops, so that a walk that is quadratic in the entries is the
 //! whole of what the ratio shows.
 
-use super::read::{Era, Reader};
-use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+use super::derived::kit_read;
+use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::molang::RawVersion;
 use bedrock_addon_core::test_cost::assert_linear_at;
 
@@ -60,10 +61,21 @@ pub(crate) fn array_of(count: usize, entry: &str) -> Value {
     value(&format!("[{}]", vec![entry; count].join(", ")))
 }
 
-/// Runs `read` with a reader of `era` and returns what it read with the findings.
-pub(crate) fn reading<T>(era: Era, read: impl FnOnce(&mut Reader<'_>) -> T) -> (T, Diagnostics) {
+/// The two eras, named, and whether each is the legacy parser's.
+pub(crate) const ERAS: [(&str, bool); 2] = [("legacy", true), ("1.20.80", false)];
+
+/// `value` as the node at the root of a read.
+pub(crate) fn root(value: &Value) -> Node<'_> {
+    Node::new(value, JsonPath::new())
+}
+
+/// Runs `read` with a read of the era (`legacy` the legacy parser's) and returns what it read
+/// with the findings.
+pub(crate) fn reading<T>(legacy: bool, read: impl FnOnce(&mut Read<'_>) -> T) -> (T, Diagnostics) {
     let mut found = Diagnostics::default();
-    let mut r = Reader::new(era, RawVersion(13), JsonPath::new(), &mut found);
-    let read = read(&mut r);
-    (read, found)
+    let mut r = kit_read(legacy, RawVersion(13), Severity::Warning, &mut found);
+    let value = read(&mut r);
+    r.finish();
+    drop(r);
+    (value, found)
 }

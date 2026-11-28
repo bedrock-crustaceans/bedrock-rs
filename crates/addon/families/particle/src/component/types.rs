@@ -4,14 +4,16 @@ use facet_value::VArray;
 use indexmap::IndexMap;
 
 use crate::codes;
-use crate::derived::{L0, LEGACY, STRICT, hand};
-use crate::read::{Era, KEPT, Members, Node, Opt, Reader, Writer};
+use crate::derived::{
+    KEPT, L0, LEGACY, STRICT, elements, entries, legacy, line, molang_array_of, refuse, string,
+    walk_each, walk_spec, wrong,
+};
 use bedrock_addon_core::diagnostic::Code;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::document::UnknownMembers;
-use bedrock_addon_core::json::{EncodeError, Value};
-use bedrock_addon_core::molang::{Molang, MolangVisitor};
-use bedrock_addon_core::schema::{self, Schema};
+use bedrock_addon_core::json::kit::{Node, Read};
+use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor, Step};
+use bedrock_addon_core::schema::{self, FromJson, Schema};
 use bedrock_addon_shared_shapes::OneOrMany;
 
 /// The events a component fires: one event name, or a list of them.
@@ -19,53 +21,36 @@ use bedrock_addon_shared_shapes::OneOrMany;
 /// JSON: a string, or an array of strings. The names are keys of the effect's `events`.
 pub type VectorEvents = OneOrMany<String>;
 
-impl Node for VectorEvents {
-    fn read(value: &Value, r: &mut Reader<'_>, _: Opt) -> Option<Self> {
-        if let Some(name) = value.as_string() {
-            return Some(Self::One(name.as_str().to_owned()));
-        }
-        let Some(elements) = value.as_array() else {
-            r.wrong_type(value, Some(&codes::EVENT_FIELD));
-            return None;
-        };
-        let mut names = Vec::with_capacity(elements.len());
-        let mut places = Vec::with_capacity(elements.len());
-        for (i, element) in elements.iter().enumerate() {
-            match element.as_string() {
-                Some(name) => {
-                    names.push(name.as_str().to_owned());
-                    places.push(i);
-                }
-                None => r.index(i, |r| r.wrong_type(element, Some(&codes::EVENT_ELEMENT))),
-            }
-        }
-        r.kept(&places);
-        Some(Self::Many(names))
+/// A [`VectorEvents`]: an element that is no string is left out with the legacy parser's line.
+pub(crate) fn vector_events(node: &Node<'_>, read: &mut Read<'_>) -> Option<VectorEvents> {
+    if let Some(name) = node.value().as_string() {
+        return Some(VectorEvents::One(name.as_str().to_owned()));
     }
+    let names = elements(node, read, Some(&codes::EVENT_FIELD), |element, read| {
+        string(element, read, Some(&codes::EVENT_ELEMENT))
+    });
+    names.map(VectorEvents::Many)
+}
 
-    fn fallback(_: Opt) -> Self {
-        Self::Many(Vec::new())
-    }
-
-    fn write(&self, _: &mut Writer) -> Result<Value, EncodeError> {
-        Ok(match self {
-            Self::One(name) => Value::from(name.as_str()),
-            Self::Many(names) => names
-                .iter()
-                .map(|name| Value::from(name.as_str()))
-                .collect::<VArray>()
-                .into(),
-        })
-    }
+/// A map of [`VectorEvents`] by a decimal string, `code` the legacy parser's line for a value
+/// that is no object.
+pub(crate) fn events_by(
+    node: &Node<'_>,
+    read: &mut Read<'_>,
+    code: &'static bedrock_addon_core::diagnostic::CodeDef<0>,
+) -> Option<IndexMap<String, VectorEvents>> {
+    entries(node, read, Some(code), |_, entry, read| {
+        vector_events(entry, read)
+    })
 }
 
 /// `timeline` (an emitter's and a particle's): the legacy parser's line for a value that is no
 /// object is its own.
 pub(crate) fn timeline(
-    node: &bedrock_addon_core::json::kit::Node<'_>,
-    read: &mut bedrock_addon_core::json::kit::Read<'_>,
+    node: &Node<'_>,
+    read: &mut Read<'_>,
 ) -> Option<IndexMap<String, VectorEvents>> {
-    crate::derived::hand_with(node, read, Opt::NONE.wrong(&codes::TIMELINE))
+    events_by(node, read, &codes::TIMELINE)
 }
 
 /// The direction particles leave an emitter shape in.
@@ -85,45 +70,35 @@ pub enum EmitterDirection {
     Custom([Molang; 3]),
 }
 
-impl Node for EmitterDirection {
-    fn read(value: &Value, r: &mut Reader<'_>, o: Opt) -> Option<Self> {
-        if value.is_array() {
-            return <[Molang; 3]>::read(value, r, o).map(Self::Custom);
+impl FromJson for EmitterDirection {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if node.value().is_array() {
+            return molang_array_of(node, read, 0.0).map(Self::Custom);
         }
-        match value.as_string().map(facet_value::VString::as_str) {
+        match node.value().as_string().map(facet_value::VString::as_str) {
             Some("inwards") => Some(Self::Inwards),
             Some("outwards") => Some(Self::Outwards),
-            Some(_) if !r.legacy() => {
-                r.error(Code::from(&core_codes::INVALID_VALUE));
+            Some(_) if !legacy(read) => {
+                refuse(read, node.path(), Code::from(&core_codes::INVALID_VALUE));
                 None
             }
             _ => {
-                r.wrong_type(value, Some(&codes::DIRECTION_INVALID));
+                wrong(read, node, Some(&codes::DIRECTION_INVALID));
                 None
             }
-        }
-    }
-
-    fn fallback(_: Opt) -> Self {
-        Self::Outwards
-    }
-
-    fn write(&self, w: &mut Writer) -> Result<Value, EncodeError> {
-        match self {
-            Self::Inwards => Ok(Value::from("inwards")),
-            Self::Outwards => Ok(Value::from("outwards")),
-            Self::Custom(direction) => direction.write(w),
-        }
-    }
-
-    fn walk(&mut self, era: Era, o: Opt, v: &mut MolangVisitor<'_>) {
-        if let Self::Custom(direction) = self {
-            direction.walk(era, o, v);
         }
     }
 }
 
-crate::derived::hand_leaf!(
+impl MolangFields for EmitterDirection {
+    fn visit_molang(&mut self, v: &mut MolangVisitor<'_>) {
+        if let Self::Custom(direction) = self {
+            walk_each(direction, &walk_spec(v, None), v);
+        }
+    }
+}
+
+bedrock_addon_core::impl_schema_leaf!(
     EmitterDirection,
     PlaneNormal,
     ColorExpr,
@@ -151,42 +126,31 @@ pub enum PlaneNormal {
     Custom([Molang; 3]),
 }
 
-impl Node for PlaneNormal {
-    fn read(value: &Value, r: &mut Reader<'_>, o: Opt) -> Option<Self> {
-        if value.is_array() {
-            return <[Molang; 3]>::read(value, r, o).map(Self::Custom);
+impl FromJson for PlaneNormal {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if node.value().is_array() {
+            return molang_array_of(node, read, 0.0).map(Self::Custom);
         }
-        match value.as_string().map(facet_value::VString::as_str) {
+        match node.value().as_string().map(facet_value::VString::as_str) {
             Some("x") => Some(Self::X),
             Some("y") => Some(Self::Y),
             Some("z") => Some(Self::Z),
-            Some(_) if !r.legacy() => {
-                r.error(Code::from(&core_codes::INVALID_VALUE));
+            Some(_) if !legacy(read) => {
+                refuse(read, node.path(), Code::from(&core_codes::INVALID_VALUE));
                 None
             }
             _ => {
-                r.wrong_type(value, Some(&codes::PLANE_NORMAL_INVALID));
+                wrong(read, node, Some(&codes::PLANE_NORMAL_INVALID));
                 None
             }
         }
     }
+}
 
-    fn fallback(_: Opt) -> Self {
-        Self::Y
-    }
-
-    fn write(&self, w: &mut Writer) -> Result<Value, EncodeError> {
-        match self {
-            Self::X => Ok(Value::from("x")),
-            Self::Y => Ok(Value::from("y")),
-            Self::Z => Ok(Value::from("z")),
-            Self::Custom(normal) => normal.write(w),
-        }
-    }
-
-    fn walk(&mut self, era: Era, o: Opt, v: &mut MolangVisitor<'_>) {
+impl MolangFields for PlaneNormal {
+    fn visit_molang(&mut self, v: &mut MolangVisitor<'_>) {
         if let Self::Custom(normal) = self {
-            normal.walk(era, o, v);
+            walk_each(normal, &walk_spec(v, None), v);
         }
     }
 }
@@ -207,8 +171,8 @@ pub enum ColorExpr {
     Hex(String),
 }
 
-/// The components of a channel default: a colour the legacy parser could not read is white.
-const CHANNEL: Opt = Opt::with_default(1.0);
+/// The default of a channel: a colour the legacy parser could not read is white.
+const CHANNEL: f32 = 1.0;
 
 impl ColorExpr {
     /// The colour of a [`ColorExpr::Hex`] string as `[alpha, red, green, blue]` bytes: `#`
@@ -232,50 +196,41 @@ fn hex(text: &str) -> Option<u32> {
     u32::from_str_radix(digits, 16).ok()
 }
 
-impl Node for ColorExpr {
-    fn read(value: &Value, r: &mut Reader<'_>, _: Opt) -> Option<Self> {
-        if let Some(text) = value.as_string() {
+impl FromJson for ColorExpr {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if let Some(text) = node.value().as_string() {
             let text = text.as_str();
             if hex(text).is_none() {
                 // A 1.20.80 document logs the line and keeps the document; the string stays
                 // as written.
-                r.warn(&codes::COLOR_STRING);
-                if r.legacy() {
+                line(read, node.path(), &codes::COLOR_STRING);
+                if legacy(read) {
                     return None;
                 }
             }
             return Some(Self::Hex(text.to_owned()));
         }
-        match value.as_array().map(VArray::len) {
-            Some(4) => <[Molang; 4]>::read(value, r, CHANNEL).map(Self::Rgba),
-            Some(3) => <[Molang; 3]>::read(value, r, CHANNEL).map(Self::Rgb),
+        match node.value().as_array().map(VArray::len) {
+            Some(4) => molang_array_of(node, read, CHANNEL).map(Self::Rgba),
+            Some(3) => molang_array_of(node, read, CHANNEL).map(Self::Rgb),
             Some(_) => {
-                r.wrong_type(value, Some(&codes::COLOR_COUNT));
+                wrong(read, node, Some(&codes::COLOR_COUNT));
                 None
             }
             None => {
-                r.wrong_type(value, Some(&codes::COLOR_SHAPE));
+                wrong(read, node, Some(&codes::COLOR_SHAPE));
                 None
             }
         }
     }
+}
 
-    fn fallback(_: Opt) -> Self {
-        Self::Rgba(<[Molang; 4]>::fallback(CHANNEL))
-    }
-
-    fn write(&self, w: &mut Writer) -> Result<Value, EncodeError> {
+impl MolangFields for ColorExpr {
+    fn visit_molang(&mut self, v: &mut MolangVisitor<'_>) {
+        let spec = walk_spec(v, Some(CHANNEL));
         match self {
-            Self::Rgba(channels) => channels.write(w),
-            Self::Rgb(channels) => channels.write(w),
-            Self::Hex(text) => Ok(Value::from(text.as_str())),
-        }
-    }
-
-    fn walk(&mut self, era: Era, _: Opt, v: &mut MolangVisitor<'_>) {
-        match self {
-            Self::Rgba(channels) => channels.walk(era, CHANNEL, v),
-            Self::Rgb(channels) => channels.walk(era, CHANNEL, v),
+            Self::Rgba(channels) => walk_each(channels, &spec, v),
+            Self::Rgb(channels) => walk_each(channels, &spec, v),
             Self::Hex(_) => {}
         }
     }
@@ -326,48 +281,60 @@ impl Gradient {
     }
 }
 
-impl Node for Gradient {
-    fn read(value: &Value, r: &mut Reader<'_>, o: Opt) -> Option<Self> {
-        let o = o.wrong(&codes::GRADIENT);
-        let (read, written) = if let Some(elements) = value.as_array() {
-            let read = Vec::<ColorExpr>::read(value, r, o)?;
-            (Self::List(read), elements.len())
-        } else if let Some(members) = Members::of(value) {
-            let read = IndexMap::<String, ColorExpr>::read(value, r, o)?;
-            (Self::Keyed(read), members.iter().count())
-        } else {
-            r.wrong_type(value, o.wrong);
-            return None;
+impl FromJson for Gradient {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let code = Some(&codes::GRADIENT);
+        let (read_value, written) = match node.value() {
+            value if value.is_array() => {
+                let colors = elements(node, read, code, ColorExpr::from_json)?;
+                (Self::List(colors), value.as_array().map_or(0, VArray::len))
+            }
+            value if value.is_object() => {
+                let colors = entries(node, read, code, |_, entry, read| {
+                    ColorExpr::from_json(entry, read)
+                })?;
+                (
+                    Self::Keyed(colors),
+                    value.as_object().map_or(0, facet_value::VObject::len),
+                )
+            }
+            _ => {
+                wrong(read, node, code);
+                return None;
+            }
         };
-        let kept = match &read {
+        let kept = match &read_value {
             Self::List(colors) => colors.len(),
             Self::Keyed(colors) => colors.len(),
         };
         // A colour the legacy parser could not read spoils the gradient.
         if kept != written {
-            if r.legacy() {
-                r.warn(&codes::GRADIENT);
+            if legacy(read) {
+                line(read, node.path(), &codes::GRADIENT);
             }
             return None;
         }
-        Some(read)
+        Some(read_value)
     }
+}
 
-    fn fallback(_: Opt) -> Self {
-        Self::List(Vec::new())
-    }
-
-    fn write(&self, w: &mut Writer) -> Result<Value, EncodeError> {
+impl MolangFields for Gradient {
+    fn visit_molang(&mut self, v: &mut MolangVisitor<'_>) {
         match self {
-            Self::List(colors) => colors.write(w),
-            Self::Keyed(colors) => colors.write(w),
-        }
-    }
-
-    fn walk(&mut self, era: Era, o: Opt, v: &mut MolangVisitor<'_>) {
-        match self {
-            Self::List(colors) => colors.walk(era, o, v),
-            Self::Keyed(colors) => colors.walk(era, o, v),
+            Self::List(colors) => {
+                for (i, color) in colors.iter_mut().enumerate() {
+                    v.enter(Step::Index(i));
+                    color.visit_molang(v);
+                    v.leave();
+                }
+            }
+            Self::Keyed(colors) => {
+                for (key, color) in colors.iter_mut() {
+                    v.enter(Step::Key(key));
+                    color.visit_molang(v);
+                    v.leave();
+                }
+            }
         }
     }
 }
@@ -382,7 +349,7 @@ pub struct ColorGradient {
     /// The colours (JSON `gradient`).
     #[facet(
         default = Gradient::List(Vec::new()),
-        schema::read_with = hand,
+        schema::read_with = Gradient::from_json,
         schema::era(LEGACY, missing = codes::GRADIENT),
         schema::era(STRICT, missing = core_codes::MISSING_REQUIRED_FIELD)
     )]
@@ -399,8 +366,6 @@ pub struct ColorGradient {
     pub extra: UnknownMembers,
 }
 
-crate::read::derived_node!(ColorGradient);
-
 /// `minecraft:particle_appearance_tinting/color`: one colour, or a gradient with the Molang
 /// that picks from it.
 ///
@@ -415,35 +380,25 @@ pub enum TintColor {
     Gradient(ColorGradient),
 }
 
-impl Node for TintColor {
-    fn read(value: &Value, r: &mut Reader<'_>, o: Opt) -> Option<Self> {
-        let read = if value.is_object() {
-            ColorGradient::read(value, r, o).map(Self::Gradient)
+impl FromJson for TintColor {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let read_value = if node.value().is_object() {
+            ColorGradient::from_json(node, read).map(Self::Gradient)
         } else {
-            ColorExpr::read(value, r, o).map(Self::Color)
+            ColorExpr::from_json(node, read).map(Self::Color)
         };
-        if read.is_none() && r.legacy() {
-            r.warn(&codes::INVALID_COLOR);
+        if read_value.is_none() && legacy(read) {
+            line(read, node.path(), &codes::INVALID_COLOR);
         }
-        read
+        read_value
     }
+}
 
-    /// White: what the legacy parser gives a tint without a usable colour.
-    fn fallback(o: Opt) -> Self {
-        Self::Color(ColorExpr::fallback(o))
-    }
-
-    fn write(&self, w: &mut Writer) -> Result<Value, EncodeError> {
+impl MolangFields for TintColor {
+    fn visit_molang(&mut self, v: &mut MolangVisitor<'_>) {
         match self {
-            Self::Color(color) => color.write(w),
-            Self::Gradient(gradient) => gradient.write(w),
-        }
-    }
-
-    fn walk(&mut self, era: Era, o: Opt, v: &mut MolangVisitor<'_>) {
-        match self {
-            Self::Color(color) => color.walk(era, o, v),
-            Self::Gradient(gradient) => gradient.walk(era, o, v),
+            Self::Color(color) => color.visit_molang(v),
+            Self::Gradient(gradient) => gradient.visit_molang(v),
         }
     }
 }
@@ -452,19 +407,20 @@ impl Node for TintColor {
 mod tests {
     use super::*;
     use crate::linear::{
-        SINGLE, array_of, assert_reads_linear, assert_reads_linear_at, object_of, reading,
+        ERAS, SINGLE, array_of, assert_reads_linear, assert_reads_linear_at, object_of, reading,
+        root,
     };
 
     /// The gradient reader alone, in its keyed and its list form, on a value parsed
     /// beforehand.
     #[test]
     fn the_gradient_reader_reads_100_000_stops_in_linear_time() {
-        for era in [Era::Legacy, Era::Cereal] {
+        for (era, legacy) in ERAS {
             assert_reads_linear(
-                &format!("keyed gradient ({era:?})"),
+                &format!("keyed gradient ({era})"),
                 |count| object_of(count, "0.", "[1, 1, 1, 1]"),
                 |stops, count| {
-                    let (read, found) = reading(era, |r| Gradient::read(stops, r, Opt::NONE));
+                    let (read, found) = reading(legacy, |r| Gradient::from_json(&root(stops), r));
                     assert!(matches!(&read, Some(Gradient::Keyed(read)) if read.len() == count));
                     assert!(found.is_empty());
                     (read, found)
@@ -472,11 +428,11 @@ mod tests {
             );
             // A listed stop is read in a quarter of a microsecond: four times the entries.
             assert_reads_linear_at(
-                &format!("listed gradient ({era:?})"),
+                &format!("listed gradient ({era})"),
                 4 * SINGLE,
                 |count| array_of(count, r##""#ff00ff""##),
                 |stops, count| {
-                    let (read, found) = reading(era, |r| Gradient::read(stops, r, Opt::NONE));
+                    let (read, found) = reading(legacy, |r| Gradient::from_json(&root(stops), r));
                     assert!(matches!(&read, Some(Gradient::List(read)) if read.len() == count));
                     assert!(found.is_empty());
                     (read, found)

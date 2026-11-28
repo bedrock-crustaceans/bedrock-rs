@@ -20,11 +20,10 @@ use crate::component::{
     EmitterRateSteady, EmitterShapePoint, ParticleAppearanceBillboard, ParticleComponent,
     write_component,
 };
+use crate::derived::{kept, kit_read, line, note, refuse};
 use crate::read::{
-    Entry, json, known, read_components, read_curves, read_events, walk_legacy_component,
-    walk_named,
+    Entry, curves, events, json, known, read_components, walk_legacy_component, walk_named,
 };
-use crate::read::{Era, Members, Reader, Writer};
 use crate::write::{PAYLOAD_KEY, document, payload_of};
 use crate::{BasicRenderParameters, Curve, Description, EventNode, codes};
 #[cfg(feature = "molang")]
@@ -35,11 +34,13 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::document::{Component as _, ComponentMap, UnknownMembers};
 use bedrock_addon_core::id::ParticleId;
+use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{
     Molang, MolangFieldMut, MolangFields, MolangSource, MolangVisitor, RawVersion, SourceForm,
     Step, visit_fields,
 };
+use bedrock_addon_core::schema::UnknownRule;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
 
@@ -90,112 +91,145 @@ impl Versioned for ParticleEffect {
 /// An error of the legacy envelope checks, and of a description that gives no identifier
 /// (the error is the crate's own there: the game registers an effect named `""`), with
 /// vanilla's text.
-fn refuse(r: &mut Reader<'_>, code: &'static CodeDef<0>) {
-    r.error(Code::from(code));
+fn refused(read: &mut Read<'_>, at: &JsonPath, code: &'static CodeDef<0>) {
+    refuse(read, at, Code::from(code));
 }
 
 /// A content-log line about a member that is missing, which the game writes at the error
 /// level and which does not stop the load: a kept error.
-fn lacking(r: &mut Reader<'_>, code: &'static CodeDef<0>) {
-    r.push_kept(Code::from(code));
+fn lacking(read: &mut Read<'_>, at: &JsonPath, code: &'static CodeDef<0>) {
+    kept(read, at, Code::from(code));
 }
 
-/// A string member of `basic_render_parameters`: its value, and whether the legacy parser
-/// stops at it. A missing member stops it with `missing`; one that is no string gets
-/// `not_string` and stops only where `stops` says so.
+/// The members of the object `value` at `at` that `known` does not name: each reported as
+/// `UnrecognizedField` (the legacy parser reads past them, so the crate tells them as an
+/// information) and not kept: the game never stores an unknown key, so the value holds none
+/// and the upgrade carries none. The `extra` of a value is for one built by hand.
+fn passed_over(value: &Value, at: &JsonPath, known: fn(&str) -> bool, read: &mut Read<'_>) {
+    for (key, member) in value
+        .as_object()
+        .into_iter()
+        .flat_map(|object| object.iter())
+    {
+        if !known(key.as_str()) {
+            let node = Node::new(member, at.child(key.as_str()));
+            read.unknown_member(&node, UnknownRule::Keep);
+        }
+    }
+}
+
+/// A string member of `basic_render_parameters` (the object `parameters` at `at`): its value,
+/// and whether the legacy parser stops at it. A missing member stops it with `missing`; one
+/// that is no string gets `not_string` and stops only where `stops` says so.
 fn render_string(
-    m: Members<'_>,
+    parameters: &Value,
+    at: &JsonPath,
     key: &str,
     (missing, not_string, stops): (&'static CodeDef<0>, &'static CodeDef<0>, bool),
-    r: &mut Reader<'_>,
+    read: &mut Read<'_>,
 ) -> (String, bool) {
-    r.key(key, |r| match m.get(key) {
+    let at = at.child(key);
+    match parameters.as_object().and_then(|object| object.get(key)) {
         None => {
-            lacking(r, missing);
+            lacking(read, &at, missing);
             (String::new(), true)
         }
         Some(value) => match value.as_string() {
             Some(text) => (text.as_str().to_owned(), false),
             None => {
-                r.warn(not_string);
+                line(read, &at, not_string);
                 (String::new(), stops)
             }
         },
-    })
+    }
+}
+
+/// The member `key` of the object `value`.
+fn member<'v>(value: &'v Value, key: &str) -> Option<&'v Value> {
+    value.as_object()?.get(key)
 }
 
 impl ParticleEffect {
-    /// Reads the payload object the way the legacy parser does.
-    fn read(payload: &Value, version: FormatVersion, r: &mut Reader<'_>) -> Option<Self> {
-        let m = Members::of(payload).unwrap_or(Members::EMPTY);
-        let description = m.get("description").and_then(Members::of);
-        let Some(description) = description else {
-            r.key("description", |r| refuse(r, &codes::NO_DESCRIPTION));
+    /// Reads the payload object at `at` the way the legacy parser does.
+    fn read(
+        payload: &Value,
+        at: &JsonPath,
+        version: FormatVersion,
+        read: &mut Read<'_>,
+    ) -> Option<Self> {
+        let at_description = at.child("description");
+        let Some(description) = member(payload, "description").filter(|d| d.is_object()) else {
+            refused(read, &at_description, &codes::NO_DESCRIPTION);
             return None;
         };
-        r.key("description", |r| {
-            let identifier = description.get("identifier").and_then(Value::as_string);
-            let Some(identifier) = identifier else {
-                r.key("identifier", |r| refuse(r, &codes::NO_IDENTIFIER));
-                return None;
-            };
-            // From here on the parser has the identifier: where it stops, the game still
-            // upgrades and registers what was parsed.
-            let parameters = description
-                .get("basic_render_parameters")
-                .and_then(Members::of);
-            let (material, texture, stopped, parameters_extra) =
-                r.key("basic_render_parameters", |r| {
-                    let Some(parameters) = parameters else {
-                        lacking(r, &codes::NO_RENDER_PARAMETERS);
-                        return (
-                            String::new(),
-                            String::new(),
-                            true,
-                            UnknownMembers::default(),
-                        );
-                    };
-                    let (material, no_material) = render_string(
-                        parameters,
-                        "material",
-                        (&codes::NO_MATERIAL, &codes::MATERIAL_NOT_STRING, true),
-                        r,
-                    );
-                    let (texture, no_texture) = render_string(
-                        parameters,
-                        "texture",
-                        (&codes::NO_TEXTURE, &codes::TEXTURE_NOT_STRING, false),
-                        r,
-                    );
-                    let extra = parameters.extra(|key| matches!(key, "material" | "texture"), r);
-                    (material, texture, no_material || no_texture, extra)
-                });
-            let description = Description {
-                identifier: ParticleId::parse(identifier.as_str().to_owned()),
-                basic_render_parameters: BasicRenderParameters {
-                    material,
-                    texture,
-                    extra: parameters_extra,
-                },
-                extra: description.extra(
-                    |key| matches!(key, "identifier" | "basic_render_parameters"),
-                    r,
-                ),
-            };
-            Some((description, stopped))
-        })
-        .map(|(description, stopped)| Self::read_rest(m, description, stopped, version, r))
+        let Some(identifier) = member(description, "identifier").and_then(Value::as_string) else {
+            refused(
+                read,
+                &at_description.child("identifier"),
+                &codes::NO_IDENTIFIER,
+            );
+            return None;
+        };
+        // From here on the parser has the identifier: where it stops, the game still upgrades
+        // and registers what was parsed.
+        let at_parameters = at_description.child("basic_render_parameters");
+        let parameters = member(description, "basic_render_parameters").filter(|p| p.is_object());
+        let (material, texture, stopped) = match parameters {
+            None => {
+                lacking(read, &at_parameters, &codes::NO_RENDER_PARAMETERS);
+                (String::new(), String::new(), true)
+            }
+            Some(parameters) => {
+                let (material, no_material) = render_string(
+                    parameters,
+                    &at_parameters,
+                    "material",
+                    (&codes::NO_MATERIAL, &codes::MATERIAL_NOT_STRING, true),
+                    read,
+                );
+                let (texture, no_texture) = render_string(
+                    parameters,
+                    &at_parameters,
+                    "texture",
+                    (&codes::NO_TEXTURE, &codes::TEXTURE_NOT_STRING, false),
+                    read,
+                );
+                let known = |key: &str| matches!(key, "material" | "texture");
+                passed_over(parameters, &at_parameters, known, read);
+                (material, texture, no_material || no_texture)
+            }
+        };
+        let known = |key: &str| matches!(key, "identifier" | "basic_render_parameters");
+        passed_over(description, &at_description, known, read);
+        let description = Description {
+            identifier: ParticleId::parse(identifier.as_str().to_owned()),
+            basic_render_parameters: BasicRenderParameters {
+                material,
+                texture,
+                extra: UnknownMembers::default(),
+            },
+            extra: UnknownMembers::default(),
+        };
+        Some(Self::read_rest(
+            payload,
+            at,
+            description,
+            stopped,
+            version,
+            read,
+        ))
     }
 
     /// What follows the description: curves, events and components, as far as the parser
     /// gets. Where it stops (`stopped`: the render parameters; or no `components` object) it
     /// returns what it has, and that is the effect.
     fn read_rest(
-        m: Members<'_>,
+        payload: &Value,
+        at: &JsonPath,
         description: Description,
         stopped: bool,
         version: FormatVersion,
-        r: &mut Reader<'_>,
+        read: &mut Read<'_>,
     ) -> Self {
         let mut effect = Self {
             format_version: version,
@@ -211,67 +245,71 @@ impl ParticleEffect {
             // information level (the game stops there too): the line at the render
             // parameters does not say that the rest of the effect goes with them.
             for key in ["curves", "events", "components"] {
-                if m.get(key).is_some_and(|member| !member.is_null()) {
-                    r.key(key, |r| {
-                        r.push(Code::from(&core_codes::DROPPED_FIELD), Severity::Info);
-                    });
+                if member(payload, key).is_some_and(|value| !value.is_null()) {
+                    note(read, &at.child(key), &core_codes::DROPPED_FIELD);
                 }
             }
             // An unknown member is no part of what the parser stopped before.
-            effect.extra = m.extra(known, r);
+            passed_over(payload, at, known, read);
             return effect;
         }
-        effect.curves = read_curves(m, r);
-        effect.events = read_events(m, r);
-        let Some(components) = m.get("components").and_then(Members::of) else {
+        let at_curves = at.child("curves");
+        effect.curves =
+            member(payload, "curves").and_then(|value| curves(&Node::new(value, at_curves), read));
+        let at_events = at.child("events");
+        effect.events =
+            member(payload, "events").and_then(|value| events(&Node::new(value, at_events), read));
+        let at_components = at.child("components");
+        let Some(components) = member(payload, "components").filter(|c| c.is_object()) else {
             // The parser stops here too: the effect has its curves and events, no component.
-            r.key("components", |r| lacking(r, &codes::NO_COMPONENTS));
-            effect.extra = m.extra(known, r);
+            lacking(read, &at_components, &codes::NO_COMPONENTS);
+            passed_over(payload, at, known, read);
             return effect;
         };
-        r.key("components", |r| {
-            read_components(components, r, |key, entry| {
+        read_components(
+            &Node::new(components, at_components.clone()),
+            read,
+            |key, entry| {
                 let entry = match entry {
                     Entry::Typed(component) => Component::Typed(component),
                     Entry::CameraDistanceFade(json) => Component::CameraDistanceFade(json),
                 };
                 effect.components.insert(key.to_owned(), entry);
-            });
-        });
-        effect.extra = m.extra(known, r);
-        let parameters = &effect.description.basic_render_parameters;
-        let (no_material, no_texture) = (
-            parameters.material.is_empty(),
-            parameters.texture.is_empty(),
+            },
         );
-        r.key("description", |r| {
-            r.key("basic_render_parameters", |r| {
-                if no_material {
-                    r.key("material", |r| lacking(r, &codes::MATERIAL_NOT_FOUND));
-                }
-                if no_texture {
-                    r.key("texture", |r| lacking(r, &codes::TEXTURE_NOT_FOUND));
-                }
-            });
-        });
+        passed_over(payload, at, known, read);
+        let parameters = &effect.description.basic_render_parameters;
+        let at_parameters = at.child("description").child("basic_render_parameters");
+        if parameters.material.is_empty() {
+            lacking(
+                read,
+                &at_parameters.child("material"),
+                &codes::MATERIAL_NOT_FOUND,
+            );
+        }
+        if parameters.texture.is_empty() {
+            lacking(
+                read,
+                &at_parameters.child("texture"),
+                &codes::TEXTURE_NOT_FOUND,
+            );
+        }
         let has = |names: &[&str]| names.iter().any(|name| effect.has_typed(name));
-        r.key("components", |r| {
-            if !has(&[
-                EmitterLifetimeOnce::NAME,
-                EmitterLifetimeLooping::NAME,
-                EmitterLifetimeExpression::NAME,
-                EmitterLifetimeEvents::NAME,
-            ]) {
-                lacking(r, &codes::NEEDS_LIFETIME);
-            }
-            if !has(&[
-                EmitterRateInstant::NAME,
-                EmitterRateSteady::NAME,
-                EmitterRateManual::NAME,
-            ]) {
-                lacking(r, &codes::NEEDS_RATE);
-            }
-        });
+        if !has(&[
+            EmitterLifetimeOnce::NAME,
+            EmitterLifetimeLooping::NAME,
+            EmitterLifetimeExpression::NAME,
+            EmitterLifetimeEvents::NAME,
+        ]) {
+            lacking(read, &at_components, &codes::NEEDS_LIFETIME);
+        }
+        if !has(&[
+            EmitterRateInstant::NAME,
+            EmitterRateSteady::NAME,
+            EmitterRateManual::NAME,
+        ]) {
+            lacking(read, &at_components, &codes::NEEDS_RATE);
+        }
         effect
     }
 
@@ -280,25 +318,23 @@ impl ParticleEffect {
     }
 
     /// The payload object.
-    fn payload(&self, w: &mut Writer) -> Result<Value, EncodeError> {
-        let components = w.key("components", |w| {
-            let mut out = VObject::new();
-            for (key, entry) in &self.components {
-                let json = match entry {
-                    Component::Typed(component) => w.key(key, |w| write_component(component, w))?,
-                    Component::CameraDistanceFade(json) | Component::Unknown(json) => json.clone(),
-                };
-                out.insert(key.as_str(), json);
-            }
-            Ok(out)
-        })?;
+    fn payload(&self) -> Result<Value, EncodeError> {
+        let at = JsonPath::new().child(PAYLOAD_KEY).child("components");
+        let mut components = VObject::new();
+        for (key, entry) in &self.components {
+            let json = match entry {
+                Component::Typed(component) => write_component(component, true, &at.child(key))?,
+                Component::CameraDistanceFade(json) | Component::Unknown(json) => json.clone(),
+            };
+            components.insert(key.as_str(), json);
+        }
         payload_of(
             &self.description,
             components,
             self.curves.as_ref(),
             self.events.as_ref(),
             &self.extra,
-            w,
+            true,
         )
     }
 }
@@ -308,33 +344,34 @@ impl VersionStruct for ParticleEffect {
     /// the step-file harness hands it).
     fn parse(text: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
         let root = json(text, &cx.at, d)?;
-        let mut r = Reader::new(Era::Legacy, cx.load.molang_version, cx.at.clone(), d);
+        let mut read = kit_read(true, cx.load.molang_version, Severity::Info, d);
         let version = cx.original_version;
-        let members = Members::of(&root).unwrap_or(Members::EMPTY);
-        let whole = members.get(PAYLOAD_KEY).is_some() || members.get("format_version").is_some();
-        if !whole {
-            return Self::read(&root, version, &mut r);
-        }
-        // The legacy parser reads `format_version` and `particle_effect` and nothing else of
-        // the root: another member is passed over, which the crate reports (it is gone after
-        // the upgrade, whose envelope has two members).
-        // The crate's own finding, an information (the legacy era's unknown severity).
-        let _: UnknownMembers =
-            members.extra(|key| key == PAYLOAD_KEY || key == "format_version", &mut r);
-        r.key(PAYLOAD_KEY, |r| match members.get(PAYLOAD_KEY) {
-            Some(payload) => Self::read(payload, version, r),
-            None => {
-                refuse(r, &codes::NO_PAYLOAD);
-                None
+        let whole =
+            member(&root, PAYLOAD_KEY).is_some() || member(&root, "format_version").is_some();
+        let effect = if whole {
+            // The legacy parser reads `format_version` and `particle_effect` and nothing else
+            // of the root: another member is passed over, which the crate reports (it is gone
+            // after the upgrade, whose envelope has two members).
+            let known = |key: &str| key == PAYLOAD_KEY || key == "format_version";
+            passed_over(&root, &cx.at, known, &mut read);
+            let at = cx.at.child(PAYLOAD_KEY);
+            match member(&root, PAYLOAD_KEY) {
+                Some(payload) => Self::read(payload, &at, version, &mut read),
+                None => {
+                    refused(&mut read, &at, &codes::NO_PAYLOAD);
+                    None
+                }
             }
-        })
+        } else {
+            Self::read(&root, &cx.at, version, &mut read)
+        };
+        read.finish();
+        effect
     }
 
     /// The whole document, at the format version it was read at.
     fn write(&self) -> Result<Value, EncodeError> {
-        let mut w = Writer::new_legacy();
-        let payload = w.key(PAYLOAD_KEY, |w| self.payload(w))?;
-        Ok(document(&self.format_version.to_string(), payload))
+        Ok(document(&self.format_version.to_string(), self.payload()?))
     }
 }
 
@@ -349,7 +386,7 @@ impl MolangFields for ParticleEffect {
             }
         }
         v.leave();
-        walk_named(&mut self.curves, &mut self.events, Era::Legacy, v);
+        walk_named(&mut self.curves, &mut self.events, true, v);
         v.leave();
     }
 }

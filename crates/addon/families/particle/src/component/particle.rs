@@ -2,19 +2,22 @@
 
 use indexmap::IndexMap;
 
-use super::types::{VectorEvents, timeline};
+use super::types::{VectorEvents, timeline, vector_events};
 use crate::codes;
-use crate::derived::{L0, L1, LEGACY, STRICT, hand, write_derived};
-use crate::read::{
-    Era, KEPT, Node as HandNode, Opt, Reader, Writer, defaults, derived_node, read_list,
+use crate::derived::{
+    KEPT, L0, L1, LEGACY, STRICT, elements, float, legacy, line, molang_array_of, molang_of, note,
+    object, refuse, string, walk_each, wrong,
 };
+use crate::read::defaults;
+use bedrock_addon_core::diagnostic::Code;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Code, Severity};
 use bedrock_addon_core::document::UnknownMembers;
+use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::kit::{Node, Read};
-use bedrock_addon_core::json::{EncodeError, Value};
-use bedrock_addon_core::molang::{Molang, MolangVisitor};
-use bedrock_addon_core::schema::{self, Schema};
+use bedrock_addon_core::molang::{
+    Molang, MolangFieldMut, MolangFieldSpec, MolangFields, MolangVisitor,
+};
+use bedrock_addon_core::schema::{self, FromJson, Schema};
 use bedrock_addon_shared_shapes::OneOrMany;
 use facet::Facet;
 
@@ -91,28 +94,37 @@ impl ParticleInitialSpeed {
     }
 }
 
-impl HandNode for ParticleInitialSpeed {
-    fn read(value: &Value, r: &mut Reader<'_>, o: Opt) -> Option<Self> {
-        if value.is_array() {
-            <[Molang; 3]>::read(value, r, o).map(Self::Vector)
+/// The speed the legacy parser gives a component it cannot read: 0.
+impl Default for ParticleInitialSpeed {
+    fn default() -> Self {
+        Self::Uniform(Molang::Const(0.0))
+    }
+}
+
+impl FromJson for ParticleInitialSpeed {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if node.value().is_array() {
+            molang_array_of(node, read, 0.0).map(Self::Vector)
         } else {
-            <Molang as HandNode>::read(value, r, o).map(Self::Uniform)
+            molang_of(node, read, 0.0).map(Self::Uniform)
         }
     }
+}
 
-    fn fallback(o: Opt) -> Self {
-        Self::Uniform(Molang::fallback(o))
-    }
-
-    fn write(&self, w: &mut Writer) -> Result<Value, EncodeError> {
-        write_derived(self, w)
-    }
-
-    fn walk(&mut self, era: Era, o: Opt, v: &mut MolangVisitor<'_>) {
+impl ParticleInitialSpeed {
+    /// Hands the speed to the walk under `spec`.
+    pub(crate) fn walk_under(&mut self, spec: &MolangFieldSpec, v: &mut MolangVisitor<'_>) {
         match self {
-            Self::Uniform(speed) => speed.walk(era, o, v),
-            Self::Vector(speed) => speed.walk(era, o, v),
+            Self::Uniform(speed) => v.emit(spec, MolangFieldMut::Value(speed)),
+            Self::Vector(speed) => walk_each(speed, spec, v),
         }
+    }
+}
+
+/// The walk of a 1.20.80 document's component: kept, as every field of it.
+impl MolangFields for ParticleInitialSpeed {
+    fn visit_molang(&mut self, v: &mut MolangVisitor<'_>) {
+        self.walk_under(&KEPT, v);
     }
 }
 
@@ -141,10 +153,10 @@ defaults!(ParticleLifetimeExpression {
 #[facet(schema::unknown = "report")]
 pub struct ParticleLifetimeEvents {
     /// Fired when the particle is created (JSON `creation_event`).
-    #[facet(schema::read_with = hand)]
+    #[facet(schema::read_with = vector_events)]
     pub creation_event: Option<VectorEvents>,
     /// Fired when the particle expires (JSON `expiration_event`).
-    #[facet(schema::read_with = hand)]
+    #[facet(schema::read_with = vector_events)]
     pub expiration_event: Option<VectorEvents>,
     /// Events by the particle's age in seconds, the keys decimal strings (JSON
     /// `timeline`).
@@ -155,25 +167,12 @@ pub struct ParticleLifetimeEvents {
     pub extra: UnknownMembers,
 }
 
-/// A block list: the value of `minecraft:particle_expire_if_in_blocks` and its opposite.
-fn read_blocks(value: &Value, r: &mut Reader<'_>) -> Option<Vec<String>> {
-    let Some(elements) = value.as_array() else {
-        r.wrong_type(value, Some(&codes::NO_BLOCK_LIST));
-        return None;
-    };
-    let mut blocks = Vec::with_capacity(elements.len());
-    let mut places = Vec::with_capacity(elements.len());
-    for (i, element) in elements.iter().enumerate() {
-        match element.as_string() {
-            Some(name) => {
-                blocks.push(name.as_str().to_owned());
-                places.push(i);
-            }
-            None => r.index(i, |r| r.wrong_type(element, Some(&codes::BLOCK_NOT_STRING))),
-        }
-    }
-    r.kept(&places);
-    Some(blocks)
+/// A block list: the value of `minecraft:particle_expire_if_in_blocks` and its opposite. An
+/// element that is no string is left out with the legacy parser's line.
+fn blocks(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<String>> {
+    elements(node, read, Some(&codes::NO_BLOCK_LIST), |element, read| {
+        string(element, read, Some(&codes::BLOCK_NOT_STRING))
+    })
 }
 
 /// `minecraft:particle_expire_if_in_blocks`: the particle expires inside one of these blocks.
@@ -183,17 +182,9 @@ fn read_blocks(value: &Value, r: &mut Reader<'_>) -> Option<Vec<String>> {
 #[facet(transparent)]
 pub struct ParticleExpireIfInBlocks(pub Vec<String>);
 
-impl HandNode for ParticleExpireIfInBlocks {
-    fn read(value: &Value, r: &mut Reader<'_>, _: Opt) -> Option<Self> {
-        read_blocks(value, r).map(Self)
-    }
-
-    fn fallback(_: Opt) -> Self {
-        Self::default()
-    }
-
-    fn write(&self, w: &mut Writer) -> Result<Value, EncodeError> {
-        write_derived(self, w)
+impl FromJson for ParticleExpireIfInBlocks {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        blocks(node, read).map(Self)
     }
 }
 
@@ -204,17 +195,9 @@ impl HandNode for ParticleExpireIfInBlocks {
 #[facet(transparent)]
 pub struct ParticleExpireIfNotInBlocks(pub Vec<String>);
 
-impl HandNode for ParticleExpireIfNotInBlocks {
-    fn read(value: &Value, r: &mut Reader<'_>, _: Opt) -> Option<Self> {
-        read_blocks(value, r).map(Self)
-    }
-
-    fn fallback(_: Opt) -> Self {
-        Self::default()
-    }
-
-    fn write(&self, w: &mut Writer) -> Result<Value, EncodeError> {
-        write_derived(self, w)
+impl FromJson for ParticleExpireIfNotInBlocks {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        blocks(node, read).map(Self)
     }
 }
 
@@ -226,19 +209,39 @@ impl HandNode for ParticleExpireIfNotInBlocks {
 #[facet(transparent)]
 pub struct ParticleKillPlane(pub [f32; 4]);
 
-impl HandNode for ParticleKillPlane {
-    fn read(value: &Value, r: &mut Reader<'_>, o: Opt) -> Option<Self> {
-        <[f32; 4]>::read(value, r, o).map(Self)
-    }
-
-    fn fallback(_: Opt) -> Self {
-        Self::default()
-    }
-
-    fn write(&self, w: &mut Writer) -> Result<Value, EncodeError> {
-        write_derived(self, w)
+impl FromJson for ParticleKillPlane {
+    /// An array of four numbers; the crate's own finding for one that is not.
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if node.value().as_array().is_none_or(|array| array.len() != 4) {
+            wrong(read, node, None);
+            return None;
+        }
+        let elements = read.array(node)?;
+        let mut plane = [0.0; 4];
+        let mut complete = true;
+        for (i, element) in elements.iter().enumerate() {
+            if let Some(value) = float(&element, read) {
+                plane[i] = value;
+            } else {
+                wrong(read, &element, None);
+                complete = false;
+            }
+        }
+        complete.then_some(Self(plane))
     }
 }
+
+bedrock_addon_core::impl_no_molang!(
+    ParticleExpireIfInBlocks,
+    ParticleExpireIfNotInBlocks,
+    ParticleKillPlane
+);
+bedrock_addon_core::impl_schema_leaf!(
+    ParticleInitialSpeed,
+    ParticleExpireIfInBlocks,
+    ParticleExpireIfNotInBlocks,
+    ParticleKillPlane
+);
 
 /// `minecraft:particle_motion_dynamic`: the particle moves under acceleration and drag.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
@@ -319,12 +322,13 @@ const LEGACY_MIN_SPEED: f32 = 2.0;
 /// crate says so at the information level when this changes what the document writes.
 fn collision_event(event: &mut CollisionEvent, node: &Node<'_>, read: &mut Read<'_>) {
     let written = member(node, "min_speed");
-    let r = &mut Reader::of(node, read);
-    if r.legacy() && written && event.min_speed.is_none_or(|speed| speed < LEGACY_MIN_SPEED) {
+    if legacy(read) && written && event.min_speed.is_none_or(|speed| speed < LEGACY_MIN_SPEED) {
         event.min_speed = Some(LEGACY_MIN_SPEED);
-        r.key("min_speed", |r| {
-            r.push(Code::from(&core_codes::INVALID_VALUE), Severity::Info);
-        });
+        note(
+            read,
+            &node.path().child("min_speed"),
+            &core_codes::INVALID_VALUE,
+        );
     }
 }
 
@@ -333,63 +337,52 @@ fn collision_event(event: &mut CollisionEvent, node: &Node<'_>, read: &mut Read<
 /// JSON: an object, or an array of objects.
 pub type CollisionEvents = OneOrMany<CollisionEvent>;
 
-impl HandNode for CollisionEvents {
-    fn read(value: &Value, r: &mut Reader<'_>, o: Opt) -> Option<Self> {
-        let element = o.wrong(&codes::EVENT_NOT_PAIR);
-        // The legacy parser leaves out an entry without an `event` string.
-        let usable = |event: &CollisionEvent, legacy: bool| !legacy || !event.event.is_empty();
-        // An entry that is left out is noted where it is, at the information level: the
-        // game's line at its `event` does not say that the entry's other members go with it.
-        let named = |entry: &Value| {
-            entry
-                .as_object()
-                .and_then(|entry| entry.get("event"))
-                .and_then(Value::as_string)
-                .is_some_and(|name| !name.as_str().is_empty())
-        };
-        let left_out = |r: &mut Reader<'_>| {
-            r.push(Code::from(&core_codes::DROPPED_FIELD), Severity::Info);
-        };
-        if let Some(entries) = value.as_array() {
-            let legacy = r.legacy();
-            let (events, places) = read_list::<CollisionEvent>(value, r, element)?;
-            if legacy {
-                for (index, entry) in entries.iter().enumerate() {
-                    if entry.is_object() && !named(entry) {
-                        r.index(index, left_out);
-                    }
-                }
+/// [`CollisionEvents`]: the legacy parser leaves out an entry without an `event` string. An
+/// entry that is left out is noted where it is, at the information level: the game's line at
+/// its `event` does not say that the entry's other members go with it.
+fn collision_events(node: &Node<'_>, read: &mut Read<'_>) -> Option<CollisionEvents> {
+    let element = Some(&codes::EVENT_NOT_PAIR);
+    let legacy = legacy(read);
+    let named = |entry: &Value| {
+        entry
+            .as_object()
+            .and_then(|entry| entry.get("event"))
+            .and_then(Value::as_string)
+            .is_some_and(|name| !name.as_str().is_empty())
+    };
+    let usable = |event: &CollisionEvent| !legacy || !event.event.is_empty();
+    if node.value().is_object() {
+        let event = object::<CollisionEvent>(node, read, element)?;
+        if legacy && !named(node.value()) {
+            note(read, node.path(), &core_codes::DROPPED_FIELD);
+        }
+        return usable(&event).then_some(OneOrMany::One(event));
+    }
+    if !node.value().is_array() {
+        wrong(read, node, Some(&codes::EVENTS_NOT_PAIRS));
+        return None;
+    }
+    let entries = read.array(node)?;
+    let mut events = Vec::with_capacity(entries.len());
+    for (index, entry) in entries.iter().enumerate() {
+        if let Some(event) = object::<CollisionEvent>(&entry, read, element) {
+            events.push((index, event));
+        }
+    }
+    if legacy {
+        for entry in entries.iter() {
+            if entry.value().is_object() && !named(entry.value()) {
+                note(read, entry.path(), &core_codes::DROPPED_FIELD);
             }
-            // The events that stay, each with the index the file has it at.
-            let (events, places): (Vec<_>, Vec<_>) = events
-                .into_iter()
-                .zip(places)
-                .filter(|(event, _)| usable(event, legacy))
-                .unzip();
-            r.kept(&places);
-            return Some(Self::Many(events));
-        }
-        if value.is_object() {
-            let event = CollisionEvent::read(value, r, element)?;
-            if r.legacy() && !named(value) {
-                left_out(r);
-            }
-            return usable(&event, r.legacy()).then_some(Self::One(event));
-        }
-        r.wrong_type(value, Some(&codes::EVENTS_NOT_PAIRS));
-        None
-    }
-
-    fn fallback(_: Opt) -> Self {
-        Self::Many(Vec::new())
-    }
-
-    fn write(&self, w: &mut Writer) -> Result<Value, EncodeError> {
-        match self {
-            Self::One(event) => event.write(w),
-            Self::Many(events) => events.write(w),
         }
     }
+    // The events that stay, each with the index the file has it at.
+    let (places, events): (Vec<_>, Vec<_>) = events
+        .into_iter()
+        .filter(|(_, event)| usable(event))
+        .unzip();
+    read.findings_mut().left_out(node.path(), &places);
+    Some(OneOrMany::Many(events))
 }
 
 /// `minecraft:particle_motion_collision`: the particle collides with blocks.
@@ -427,7 +420,7 @@ pub struct ParticleMotionCollision {
     #[facet(schema::era(LEGACY, wrong_type = codes::EXPIRE_NOT_BOOL))]
     pub expire_on_contact: Option<bool>,
     /// Events fired on a hit (JSON `events`).
-    #[facet(schema::read_with = hand)]
+    #[facet(schema::read_with = collision_events)]
     pub events: Option<CollisionEvents>,
     /// Unknown members.
     #[facet(skip_deserializing)]
@@ -444,23 +437,21 @@ defaults!(ParticleMotionCollision {
 /// The radius is 0 to 0.5: the legacy parser clamps it, and a 1.20.80 document with a radius
 /// outside the range is refused.
 fn collision(component: &mut ParticleMotionCollision, node: &Node<'_>, read: &mut Read<'_>) {
-    let r = &mut Reader::of(node, read);
     let radius = component.collision_radius;
-    if !(0.0..=0.5).contains(&radius) {
-        r.key("collision_radius", |r| {
-            if r.legacy() {
-                r.warn(if radius < 0.0 {
-                    &codes::RADIUS_TOO_SMALL
-                } else {
-                    &codes::RADIUS_TOO_LARGE
-                });
-            } else {
-                r.error(Code::from(&core_codes::INVALID_VALUE));
-            }
-        });
-        if r.legacy() {
-            component.collision_radius = radius.clamp(0.0, 0.5);
-        }
+    if (0.0..=0.5).contains(&radius) {
+        return;
+    }
+    let at = node.path().child("collision_radius");
+    if legacy(read) {
+        let code = if radius < 0.0 {
+            &codes::RADIUS_TOO_SMALL
+        } else {
+            &codes::RADIUS_TOO_LARGE
+        };
+        line(read, &at, code);
+        component.collision_radius = radius.clamp(0.0, 0.5);
+    } else {
+        refuse(read, &at, Code::from(&core_codes::INVALID_VALUE));
     }
 }
 
@@ -470,14 +461,3 @@ fn member(node: &Node<'_>, key: &str) -> bool {
         .as_object()
         .is_some_and(|object| object.contains_key(key))
 }
-
-derived_node!(
-    ParticleInitialization,
-    ParticleInitialSpin,
-    ParticleLifetimeExpression,
-    ParticleLifetimeEvents,
-    ParticleMotionDynamic,
-    ParticleMotionParametric,
-    CollisionEvent,
-    ParticleMotionCollision,
-);

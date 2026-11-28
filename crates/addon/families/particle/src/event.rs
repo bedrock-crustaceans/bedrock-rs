@@ -6,20 +6,17 @@
     reason = "the two arms are the two outcomes of a read: the value, or the line about it"
 )]
 
-use facet_value::{VArray, VObject};
-
 use super::codes;
-use super::derived::{EVENT, LEGACY, STRICT, hand_with};
-use super::read::{
-    Era, KEPT, Members, Node, Opt, Reader, Writer, defaults, derived_node, float, opt, put_opt,
-    walk,
+use super::derived::{
+    EVENT, KEPT, LEGACY, STRICT, elements, legacy, line, note, object, refuse, wrong,
 };
+use super::read::defaults;
+use bedrock_addon_core::diagnostic::Code;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Code, Severity};
 use bedrock_addon_core::document::UnknownMembers;
-use bedrock_addon_core::json::kit;
-use bedrock_addon_core::json::{EncodeError, MAX_JSON_DEPTH, Unrepresentable, Value};
-use bedrock_addon_core::molang::{Molang, MolangVisitor, Step};
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::kit::{Node, Read};
+use bedrock_addon_core::molang::Molang;
 use bedrock_addon_core::schema::{self, Schema};
 
 /// What kind of effect an event starts (`particle_effect.type`).
@@ -42,7 +39,8 @@ pub enum ParticleEffectType {
     EmitterBound,
 }
 
-crate::derived::hand_leaf!(ParticleEffectType);
+bedrock_addon_core::impl_no_molang!(ParticleEffectType);
+bedrock_addon_core::impl_schema_leaf!(ParticleEffectType);
 
 impl ParticleEffectType {
     /// The type a JSON spelling names, compared byte for byte; the reverse of
@@ -70,36 +68,18 @@ impl ParticleEffectType {
     }
 }
 
-impl Node for ParticleEffectType {
-    fn read(value: &Value, r: &mut Reader<'_>, o: Opt) -> Option<Self> {
-        let text = value.as_string().map(facet_value::VString::as_str);
-        let read = text.and_then(Self::from_name);
-        if read.is_none() {
-            if text.is_some() && !r.legacy() {
-                r.error(Code::from(&core_codes::INVALID_VALUE));
-            } else {
-                r.wrong_type(value, o.wrong);
-            }
-        }
-        read
-    }
-
-    fn fallback(_: Opt) -> Self {
-        Self::Particle
-    }
-
-    fn write(&self, _: &mut Writer) -> Result<Value, EncodeError> {
-        Ok(Value::from(self.as_str()))
-    }
-}
-
-/// A Molang member of an event: 0 when absent. The legacy parser reads it only from a string
-/// and keeps an expression that does not compile.
-const EXPRESSION: Opt = Opt::NONE.event();
-
 /// `particle_effect.type`, with the legacy parser's line for a value that is no type.
-fn effect_type(node: &kit::Node<'_>, read: &mut kit::Read<'_>) -> Option<ParticleEffectType> {
-    hand_with(node, read, Opt::NONE.wrong(&codes::TYPE_MISSING))
+fn effect_type(node: &Node<'_>, read: &mut Read<'_>) -> Option<ParticleEffectType> {
+    let text = node.value().as_string().map(facet_value::VString::as_str);
+    let kind = text.and_then(ParticleEffectType::from_name);
+    if kind.is_none() {
+        if text.is_some() && !legacy(read) {
+            refuse(read, node.path(), Code::from(&core_codes::INVALID_VALUE));
+        } else {
+            wrong(read, node, Some(&codes::TYPE_MISSING));
+        }
+    }
+    kind
 }
 
 /// `particle_effect` of an event: another effect the event starts.
@@ -155,8 +135,6 @@ pub struct SoundEffectEvent {
     pub extra: UnknownMembers,
 }
 
-derived_node!(VisualEffectEvent, SoundEffectEvent);
-
 /// One node of an event: it may run Molang, start an effect, play a sound, log a line, run
 /// further nodes in order, and pick one of several nodes at random.
 ///
@@ -173,32 +151,50 @@ derived_node!(VisualEffectEvent, SoundEffectEvent);
 /// be deeper: it is dropped without a stack frame per level, but `Clone`, `PartialEq` and
 /// `Debug` recurse once per level, as derived impls do, so a chain of many thousands of
 /// nodes is one to drop or to hand to the writer, not to clone, compare or print.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(
+    schema::unknown = "report",
+    schema::molang = KEPT,
+    schema::after_read = sections
+)]
 pub struct EventNode {
     /// Nodes run one after the other (JSON `sequence`).
+    #[facet(schema::read_with = sequence)]
     pub sequence: Option<Vec<EventNode>>,
     /// Nodes of which one is picked by weight (JSON `randomize`).
+    #[facet(schema::read_with = randomize)]
     pub randomize: Option<Vec<RandomEventNode>>,
     /// Molang run on the emitter that fired the event (JSON `expression`).
+    #[facet(schema::era(LEGACY, molang = EVENT))]
     pub expression: Option<Molang>,
     /// An effect to start (JSON `particle_effect`).
+    #[facet(schema::era(LEGACY, wrong_type = codes::EFFECT_SECTION))]
     pub particle_effect: Option<VisualEffectEvent>,
     /// A sound to play (JSON `sound_effect`).
+    #[facet(schema::era(LEGACY, wrong_type = codes::SOUND_SECTION))]
     pub sound_effect: Option<SoundEffectEvent>,
     /// A line for the content log (JSON `log`).
     pub log: Option<String>,
     /// Unknown members.
+    #[facet(skip_deserializing)]
     pub extra: UnknownMembers,
 }
 
 /// One option of `randomize`: a node and its weight.
 ///
 /// JSON: the node's members and `weight` in one object.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::unknown = "report", schema::after_read = option_sections)]
 pub struct RandomEventNode {
     /// The option's share of the picks (JSON `weight`, required from format 1.20.80).
+    #[facet(
+        default = 0.0,
+        schema::guard = weighted,
+        schema::era(STRICT, missing = core_codes::MISSING_REQUIRED_FIELD)
+    )]
     pub weight: f32,
     /// What the option does.
+    #[facet(flatten)]
     pub node: EventNode,
 }
 
@@ -225,88 +221,115 @@ impl EventNode {
         );
         nodes
     }
+}
 
-    fn known(key: &str) -> bool {
-        matches!(
-            key,
-            "sequence" | "randomize" | "expression" | "particle_effect" | "sound_effect" | "log"
-        )
-    }
+/// `sequence`: an element that is no object is the legacy parser's line of an event node.
+fn sequence(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<EventNode>> {
+    elements(node, read, Some(&codes::SEQUENCE), |element, read| {
+        object(element, read, Some(&codes::EVENT_NO_DATA))
+    })
+}
 
-    fn known_in_randomize(key: &str) -> bool {
-        key == "weight" || Self::known(key)
-    }
+/// `randomize`, as [`sequence`].
+fn randomize(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<RandomEventNode>> {
+    elements(node, read, Some(&codes::RANDOM), |element, read| {
+        object(element, read, Some(&codes::EVENT_NO_DATA))
+    })
+}
 
-    fn read_node(m: Members<'_>, random: bool, r: &mut Reader<'_>) -> Self {
-        let known = if random {
-            Self::known_in_randomize
-        } else {
-            Self::known
-        };
-        let legacy = r.legacy();
-        let mut node = Self {
-            sequence: opt(m, "sequence", Opt::NONE.wrong(&codes::SEQUENCE), r),
-            randomize: opt(m, "randomize", Opt::NONE.wrong(&codes::RANDOM), r),
-            expression: opt(m, "expression", EXPRESSION, r),
-            particle_effect: opt(
-                m,
-                "particle_effect",
-                Opt::NONE.wrong(&codes::EFFECT_SECTION),
-                r,
-            ),
-            sound_effect: opt(m, "sound_effect", Opt::NONE.wrong(&codes::SOUND_SECTION), r),
-            log: opt(m, "log", Opt::NONE, r),
-            extra: m.extra(known, r),
-        };
-        if legacy {
-            // The legacy parser makes no effect without both of its required members, and
-            // no sound without a name.
-            let section = |key: &str, members: &[&str]| {
-                m.get(key).and_then(Members::of).is_some_and(|section| {
-                    members
-                        .iter()
-                        .all(|member| section.get(member).is_some_and(Value::is_string))
-                })
-            };
-            // A section the parser makes nothing of goes whole; where the file has it as an
-            // object, the crate notes that at the section, at the information level: the
-            // game's line at its member does not say that the other members go with it.
-            let left_out = |key: &str, r: &mut Reader<'_>| {
-                if m.get(key).is_some_and(Value::is_object) {
-                    r.key(key, |r| {
-                        r.push(
-                            Code::from(&core_codes::DROPPED_FIELD),
-                            bedrock_addon_core::diagnostic::Severity::Info,
-                        );
-                    });
-                }
-            };
-            if !section("particle_effect", &["effect", "type"])
-                || node
-                    .particle_effect
-                    .as_ref()
-                    .is_some_and(|effect| !written_kind(m, effect.kind))
-            {
-                node.particle_effect = None;
-                left_out("particle_effect", r);
-            }
-            if !section("sound_effect", &["event_name"]) {
-                node.sound_effect = None;
-                left_out("sound_effect", r);
-            }
-        }
-        node
+/// The legacy parser makes no effect without both of its required members, and no sound
+/// without a name. A section it makes nothing of goes whole; where the file has it as an
+/// object, the crate notes that at the section, at the information level: the game's line
+/// at its member does not say that the other members go with it.
+///
+/// An option's node is flattened into it, and its `after_read` would run before the option
+/// tells its unknown members; the parser tells them first, so the option drops the sections
+/// itself ([`option_sections`]).
+fn sections(node: &mut EventNode, at: &Node<'_>, read: &mut Read<'_>) {
+    let path = at.path();
+    let option = path.last_key().is_none()
+        && path.prefix(path.len().saturating_sub(1)).last_key() == Some("randomize");
+    if !option {
+        drop_sections(node, at, read);
     }
 }
 
-/// Whether `particle_effect.type` of `m` is written as `kind`: a legacy type the reader had
-/// to replace is no effect.
-fn written_kind(m: Members<'_>, kind: ParticleEffectType) -> bool {
-    m.get("particle_effect")
-        .and_then(Members::of)
-        .and_then(|section| section.get("type"))
-        .and_then(Value::as_string)
-        .is_some_and(|text| text.as_str() == kind.as_str())
+/// [`sections`] of an option's node, after the option told its unknown members.
+fn option_sections(option: &mut RandomEventNode, at: &Node<'_>, read: &mut Read<'_>) {
+    drop_sections(&mut option.node, at, read);
+}
+
+/// What [`sections`] drops.
+fn drop_sections(node: &mut EventNode, at: &Node<'_>, read: &mut Read<'_>) {
+    let Some(m) = at.value().as_object().filter(|_| legacy(read)) else {
+        return;
+    };
+    let section = |key: &str, members: &[&str]| {
+        m.get(key)
+            .and_then(Value::as_object)
+            .is_some_and(|section| {
+                members
+                    .iter()
+                    .all(|member| section.get(member).is_some_and(Value::is_string))
+            })
+    };
+    let left_out = |key: &str, read: &mut Read<'_>| {
+        if m.get(key).is_some_and(Value::is_object) {
+            note(read, &at.path().child(key), &core_codes::DROPPED_FIELD);
+        }
+    };
+    // A legacy type the reader had to replace is no effect.
+    let written_kind = |kind: ParticleEffectType| {
+        m.get("particle_effect")
+            .and_then(Value::as_object)
+            .and_then(|section| section.get("type"))
+            .and_then(Value::as_string)
+            .is_some_and(|text| text.as_str() == kind.as_str())
+    };
+    if !section("particle_effect", &["effect", "type"])
+        || node
+            .particle_effect
+            .as_ref()
+            .is_some_and(|effect| !written_kind(effect.kind))
+    {
+        node.particle_effect = None;
+        left_out("particle_effect", read);
+    }
+    if !section("sound_effect", &["event_name"]) {
+        node.sound_effect = None;
+        left_out("sound_effect", read);
+    }
+}
+
+/// The legacy parser skips an option without a number for a weight, or with a negative one,
+/// with every member it has: its line is at the weight alone, and the crate notes the skip at
+/// the option, at the information level. A 1.20.80 document requires the member and has no
+/// bound.
+fn weighted(option: &Node<'_>, read: &mut Read<'_>) -> bool {
+    if !legacy(read) {
+        return true;
+    }
+    let at = option.path().child("weight");
+    let written = option.value().as_object().and_then(|m| m.get("weight"));
+    match written
+        .and_then(Value::as_number)
+        .map(facet_value::VNumber::to_f64_lossy)
+    {
+        Some(weight) if weight >= 0.0 => return true,
+        Some(weight) => {
+            #[allow(
+                clippy::cast_possible_truncation,
+                reason = "the nearest f32 is the reading"
+            )]
+            if !(weight as f32).is_finite() {
+                note(read, &at, &core_codes::INVALID_VALUE);
+            }
+            line(read, &at, &codes::WEIGHT_NEGATIVE);
+        }
+        None => line(read, &at, &codes::WEIGHT),
+    }
+    note(read, option.path(), &core_codes::DROPPED_FIELD);
+    false
 }
 
 impl Drop for EventNode {
@@ -317,138 +340,6 @@ impl Drop for EventNode {
         while let Some(mut node) = pending.pop() {
             pending.append(&mut node.take_nodes());
         }
-    }
-}
-
-impl Node for EventNode {
-    fn read(value: &Value, r: &mut Reader<'_>, _: Opt) -> Option<Self> {
-        match Members::of(value) {
-            Some(members) => Some(Self::read_node(members, false, r)),
-            None => {
-                r.wrong_type(value, Some(&codes::EVENT_NO_DATA));
-                None
-            }
-        }
-    }
-
-    fn fallback(_: Opt) -> Self {
-        Self::default()
-    }
-
-    fn write(&self, w: &mut Writer) -> Result<Value, EncodeError> {
-        let mut out = VObject::new();
-        self.write_node(&mut out, false, w)?;
-        Ok(out.into())
-    }
-
-    fn walk(&mut self, era: Era, _: Opt, v: &mut MolangVisitor<'_>) {
-        if let Some(sequence) = &mut self.sequence {
-            walk("sequence", sequence, era, Opt::NONE, v);
-        }
-        if let Some(randomize) = &mut self.randomize {
-            v.enter(Step::Key("randomize"));
-            for (i, option) in randomize.iter_mut().enumerate() {
-                v.enter(Step::Index(i));
-                option.node.walk(era, Opt::NONE, v);
-                v.leave();
-            }
-            v.leave();
-        }
-        if let Some(expression) = &mut self.expression {
-            walk("expression", expression, era, EXPRESSION, v);
-        }
-        if let Some(effect) = &mut self.particle_effect {
-            walk("particle_effect", effect, era, Opt::NONE, v);
-        }
-    }
-}
-
-impl EventNode {
-    fn write_node(
-        &self,
-        out: &mut VObject,
-        random: bool,
-        w: &mut Writer,
-    ) -> Result<(), EncodeError> {
-        // A node this deep is in no text the loader reads (and the walk down to it would
-        // not end on a chain a caller built without end).
-        if w.depth() >= MAX_JSON_DEPTH {
-            return Err(w.refuse(Unrepresentable::Unsupported));
-        }
-        put_opt(out, "sequence", self.sequence.as_ref(), w)?;
-        if let Some(randomize) = &self.randomize {
-            let options = w.key("randomize", |w| {
-                let mut options = VArray::new();
-                for (i, option) in randomize.iter().enumerate() {
-                    options.push(w.index(i, |w| option.write(w))?);
-                }
-                Ok(options)
-            })?;
-            out.insert("randomize", options);
-        }
-        put_opt(out, "expression", self.expression.as_ref(), w)?;
-        put_opt(out, "particle_effect", self.particle_effect.as_ref(), w)?;
-        put_opt(out, "sound_effect", self.sound_effect.as_ref(), w)?;
-        put_opt(out, "log", self.log.as_ref(), w)?;
-        let known = if random {
-            Self::known_in_randomize
-        } else {
-            Self::known
-        };
-        w.extra(out, &self.extra, known)
-    }
-}
-
-impl Node for RandomEventNode {
-    // The legacy parser skips an option without a number for a weight, or with a negative
-    // one; a 1.20.80 document requires the member and has no bound.
-    fn read(value: &Value, r: &mut Reader<'_>, _: Opt) -> Option<Self> {
-        let Some(members) = Members::of(value) else {
-            r.wrong_type(value, Some(&codes::EVENT_NO_DATA));
-            return None;
-        };
-        let weight = match members.get("weight") {
-            Some(weight) => r.key("weight", |r| {
-                let read = float(weight, r);
-                if read.is_none() {
-                    r.wrong_type(weight, Some(&codes::WEIGHT));
-                }
-                read
-            }),
-            None => {
-                r.missing(members, "weight", Some(&codes::WEIGHT));
-                None
-            }
-        };
-        if r.legacy() {
-            let negative = weight.is_some_and(|weight| weight < 0.0);
-            if negative {
-                r.key("weight", |r| r.warn(&codes::WEIGHT_NEGATIVE));
-            }
-            if weight.is_none() || negative {
-                // The option is skipped with every member it has; the line is at its
-                // weight alone. The crate notes the skip at the option, at the information
-                // level.
-                r.push(Code::from(&core_codes::DROPPED_FIELD), Severity::Info);
-                return None;
-            }
-        }
-        Some(Self {
-            weight: weight.unwrap_or_default(),
-            node: EventNode::read_node(members, true, r),
-        })
-    }
-
-    fn fallback(_: Opt) -> Self {
-        Self::default()
-    }
-
-    fn write(&self, w: &mut Writer) -> Result<Value, EncodeError> {
-        let mut out = VObject::new();
-        let weight = w.key("weight", |w| self.weight.write(w))?;
-        out.insert("weight", weight);
-        self.node.write_node(&mut out, true, w)?;
-        Ok(out.into())
     }
 }
 

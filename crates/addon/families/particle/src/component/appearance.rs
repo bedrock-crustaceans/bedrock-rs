@@ -3,15 +3,15 @@
 
 use super::types::{ColorExpr, TintColor};
 use crate::codes;
-use crate::derived::{L0, L1, LEGACY, STRICT, hand, hand_leaf};
-use crate::read::{KEPT, Node as HandNode, Opt, Reader, Writer, defaults, derived_node};
+use crate::derived::{KEPT, L0, L1, LEGACY, STRICT, legacy, line, refuse, unread, wrong};
+use crate::read::defaults;
 use bedrock_addon_core::diagnostic::Code;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::document::UnknownMembers;
+use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::kit::{Node, Read};
-use bedrock_addon_core::json::{EncodeError, Value};
 use bedrock_addon_core::molang::Molang;
-use bedrock_addon_core::schema::{self, Schema};
+use bedrock_addon_core::schema::{self, FromJson, Schema};
 use facet::Facet;
 
 /// A Molang field that is 0 when the document does not write it.
@@ -37,33 +37,23 @@ pub enum DirectionMode {
     Custom,
 }
 
-hand_leaf!(DirectionMode);
+bedrock_addon_core::impl_no_molang!(DirectionMode);
+bedrock_addon_core::impl_schema_leaf!(DirectionMode);
 
-impl HandNode for DirectionMode {
-    fn read(value: &Value, r: &mut Reader<'_>, _: Opt) -> Option<Self> {
-        match value.as_string().map(facet_value::VString::as_str) {
+impl FromJson for DirectionMode {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        match node.value().as_string().map(facet_value::VString::as_str) {
             Some("derive_from_velocity") => Some(Self::DeriveFromVelocity),
             Some("custom") => Some(Self::Custom),
-            Some(_) if !r.legacy() => {
-                r.error(Code::from(&core_codes::INVALID_VALUE));
+            Some(_) if !legacy(read) => {
+                refuse(read, node.path(), Code::from(&core_codes::INVALID_VALUE));
                 None
             }
             _ => {
-                r.wrong_type(value, Some(&codes::DIRECTION_MODE));
+                wrong(read, node, Some(&codes::DIRECTION_MODE));
                 None
             }
         }
-    }
-
-    fn fallback(_: Opt) -> Self {
-        Self::DeriveFromVelocity
-    }
-
-    fn write(&self, _: &mut Writer) -> Result<Value, EncodeError> {
-        Ok(Value::from(match self {
-            Self::DeriveFromVelocity => "derive_from_velocity",
-            Self::Custom => "custom",
-        }))
     }
 }
 
@@ -79,7 +69,7 @@ pub struct DirectionSettings {
     /// Where the direction comes from (JSON `mode`, required from format 1.20.80).
     #[facet(
         default,
-        schema::read_with = hand,
+        schema::read_with = DirectionMode::from_json,
         schema::era(STRICT, missing = core_codes::MISSING_REQUIRED_FIELD)
     )]
     pub mode: DirectionMode,
@@ -103,7 +93,7 @@ defaults!(DirectionSettings {
 /// mode `custom` needs `custom_direction`.
 fn direction(settings: &mut DirectionSettings, node: &Node<'_>, read: &mut Read<'_>) {
     if settings.mode == DirectionMode::Custom && settings.custom_direction.is_none() {
-        Reader::of(node, read).warn(&codes::DIRECTION_CUSTOM);
+        line(read, node.path(), &codes::DIRECTION_CUSTOM);
     }
 }
 
@@ -198,14 +188,13 @@ fn has(node: &Node<'_>, key: &str) -> bool {
 /// The lines of the UV readers: the 1.20.80 reader's for an area without `uv` or
 /// `uv_size`, the legacy parser's for the old spellings of the texture size.
 fn uv(uv: &mut Uv, node: &Node<'_>, read: &mut Read<'_>) {
-    let r = &mut Reader::of(node, read);
-    if r.legacy() {
+    if legacy(read) {
         for (key, text) in [
             ("texturewidth", &codes::TEXTURE_WIDTH_NAME),
             ("textureheight", &codes::TEXTURE_HEIGHT_NAME),
         ] {
             if has(node, key) {
-                r.key(key, |r| r.warn(text));
+                line(read, &node.path().child(key), text);
             }
         }
         return;
@@ -214,10 +203,10 @@ fn uv(uv: &mut Uv, node: &Node<'_>, read: &mut Read<'_>) {
         return;
     }
     if uv.uv.is_none() {
-        r.warn(&codes::MISSING_UV);
+        line(read, node.path(), &codes::MISSING_UV);
     }
     if uv.uv_size.is_none() {
-        r.warn(&codes::MISSING_UV_SIZE);
+        line(read, node.path(), &codes::MISSING_UV_SIZE);
     }
 }
 
@@ -259,8 +248,7 @@ pub struct ParticleAppearanceBillboard {
 /// is not properly defined!" and returns before it reaches `uv`, so the game never reads the
 /// `uv` and the crate leaves it out and reports it as unread.
 fn billboard(billboard: &mut ParticleAppearanceBillboard, node: &Node<'_>, read: &mut Read<'_>) {
-    let r = &mut Reader::of(node, read);
-    if !r.legacy() {
+    if !legacy(read) {
         return;
     }
     let Some(direction) = node.value().as_object().and_then(|m| m.get("direction")) else {
@@ -277,12 +265,14 @@ fn billboard(billboard: &mut ParticleAppearanceBillboard, node: &Node<'_>, read:
         return;
     }
     // The game writes this line to the content log at the error level.
-    r.key("direction", |r| {
-        r.content_error(&codes::DIRECTION_NOT_PROPERLY_DEFINED);
-    });
+    line(
+        read,
+        &node.path().child("direction"),
+        &codes::DIRECTION_NOT_PROPERLY_DEFINED,
+    );
     if has(node, "uv") {
         billboard.uv = None;
-        r.unread("uv");
+        unread(read, &node.path().child("uv"));
     }
 }
 
@@ -297,7 +287,7 @@ pub struct ParticleAppearanceTinting {
     /// an older document that does not write it).
     #[facet(
         default = WHITE,
-        schema::read_with = hand,
+        schema::read_with = TintColor::from_json,
         schema::era(LEGACY, missing = codes::NO_COLOR),
         schema::era(STRICT, missing = core_codes::MISSING_REQUIRED_FIELD)
     )]
@@ -316,12 +306,3 @@ pub struct ParticleAppearanceLighting {
     #[facet(skip_deserializing)]
     pub extra: UnknownMembers,
 }
-
-derived_node!(
-    DirectionSettings,
-    Flipbook,
-    Uv,
-    ParticleAppearanceBillboard,
-    ParticleAppearanceTinting,
-    ParticleAppearanceLighting,
-);

@@ -3,10 +3,10 @@
 
 use indexmap::IndexMap;
 
-use super::types::{VectorEvents, timeline};
+use super::types::{VectorEvents, events_by, timeline, vector_events};
 use crate::codes;
-use crate::derived::{L0, L1, LEGACY, STRICT, hand, hand_with};
-use crate::read::{KEPT, Opt, Reader, defaults, derived_node};
+use crate::derived::{KEPT, L0, L1, LEGACY, STRICT, elements, legacy, line, note, object, refuse};
+use crate::read::defaults;
 use bedrock_addon_core::diagnostic::Code;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::document::UnknownMembers;
@@ -66,16 +66,20 @@ defaults!(EmitterLocalSpace {
 
 /// The coercion both loaders apply.
 fn local_space(space: &mut EmitterLocalSpace, node: &Node<'_>, read: &mut Read<'_>) {
-    let r = &mut Reader::of(node, read);
     let (position, rotation) = (space.position(), space.rotation());
     if rotation && !position {
-        r.key("rotation", |r| r.warn(&codes::ROTATION_WITHOUT_POSITION));
+        let at = node.path().child("rotation");
+        line(read, &at, &codes::ROTATION_WITHOUT_POSITION);
         space.rotation = Some(false);
     }
     // Vanilla stores `velocity` as written only when `position` and `rotation` are both
     // false as written, and says nothing when it does not.
     if space.velocity() && (position || rotation) {
-        r.key("velocity", Reader::warn_ours);
+        note(
+            read,
+            &node.path().child("velocity"),
+            &core_codes::INVALID_VALUE,
+        );
         space.velocity = Some(false);
     }
 }
@@ -147,7 +151,7 @@ pub struct DistanceEvent {
     /// The events fired (JSON `effects`, required).
     #[facet(
         default = VectorEvents::Many(Vec::new()),
-        schema::read_with = hand,
+        schema::read_with = vector_events,
         schema::era(STRICT, missing = core_codes::MISSING_REQUIRED_FIELD)
     )]
     pub effects: VectorEvents,
@@ -158,13 +162,14 @@ pub struct DistanceEvent {
 
 /// `travel_distance_events`, with the legacy parser's line for a value that is no object.
 fn travel_distance(node: &Node<'_>, read: &mut Read<'_>) -> Option<IndexMap<String, VectorEvents>> {
-    hand_with(node, read, Opt::NONE.wrong(&codes::TRAVEL_DISTANCE))
+    events_by(node, read, &codes::TRAVEL_DISTANCE)
 }
 
 /// `looping_travel_distance_events`: the legacy parser's line for a value that is no array is
 /// its line for an entry that is no object too.
 fn looping(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<DistanceEvent>> {
-    hand_with(node, read, Opt::NONE.wrong(&codes::LOOPING))
+    let code = Some(&codes::LOOPING);
+    elements(node, read, code, |entry, read| object(entry, read, code))
 }
 
 /// `minecraft:emitter_lifetime_events`: events the emitter fires over its life.
@@ -172,10 +177,10 @@ fn looping(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<DistanceEvent>> {
 #[facet(schema::unknown = "report", schema::after_read = lifetime_events)]
 pub struct EmitterLifetimeEvents {
     /// Fired when the emitter is created (JSON `creation_event`).
-    #[facet(schema::read_with = hand)]
+    #[facet(schema::read_with = vector_events)]
     pub creation_event: Option<VectorEvents>,
     /// Fired when the emitter expires (JSON `expiration_event`).
-    #[facet(schema::read_with = hand)]
+    #[facet(schema::read_with = vector_events)]
     pub expiration_event: Option<VectorEvents>,
     /// Events by the emitter's age in seconds, the keys decimal strings (JSON
     /// `timeline`).
@@ -200,38 +205,35 @@ fn lifetime_events(events: &mut EmitterLifetimeEvents, node: &Node<'_>, read: &m
     let Some(entries) = &mut events.looping_travel_distance_events else {
         return;
     };
-    let r = &mut Reader::of(node, read);
-    r.key("looping_travel_distance_events", |r| {
-        // The entries are counted as the list's reader kept them: it has recorded where
-        // each is in the file, so a line told here is at the file's index. The entries
-        // that stay are recorded in their turn.
-        let mut index = 0;
-        let mut places = Vec::with_capacity(entries.len());
-        entries.retain(|entry| {
-            let at = index;
-            index += 1;
-            if r.legacy() {
-                let usable = entry.distance >= 0.0 && !entry.effects.is_empty();
-                if !usable {
-                    r.index(at, |r| r.warn(&codes::LOOPING_ENTRY));
-                }
-                if usable {
-                    places.push(at);
-                }
-                return usable;
+    let at = node.path().child("looping_travel_distance_events");
+    let legacy = legacy(read);
+    // The entries are counted as the list's reader kept them: it has recorded where each is
+    // in the file, so a line told here is at the file's index. The entries that stay are
+    // recorded in their turn.
+    let mut index = 0;
+    let mut places = Vec::with_capacity(entries.len());
+    entries.retain(|entry| {
+        let here = at.index(index);
+        places.push(index);
+        index += 1;
+        if legacy {
+            let usable = entry.distance >= 0.0 && !entry.effects.is_empty();
+            if !usable {
+                places.pop();
+                line(read, &here, &codes::LOOPING_ENTRY);
             }
-            places.push(at);
-            if entry.distance < 0.0 {
-                r.index(at, |r| {
-                    r.key("distance", |r| {
-                        r.error(Code::from(&core_codes::INVALID_VALUE));
-                    });
-                });
-            }
-            true
-        });
-        r.kept(&places);
+            return usable;
+        }
+        if entry.distance < 0.0 {
+            refuse(
+                read,
+                &here.child("distance"),
+                Code::from(&core_codes::INVALID_VALUE),
+            );
+        }
+        true
     });
+    read.findings_mut().left_out(&at, &places);
 }
 
 /// `minecraft:emitter_rate_instant`: all particles at once.
@@ -288,16 +290,3 @@ pub struct EmitterRateManual {
     #[facet(skip_deserializing)]
     pub extra: UnknownMembers,
 }
-
-derived_node!(
-    EmitterInitialization,
-    EmitterLocalSpace,
-    EmitterLifetimeOnce,
-    EmitterLifetimeLooping,
-    EmitterLifetimeExpression,
-    DistanceEvent,
-    EmitterLifetimeEvents,
-    EmitterRateInstant,
-    EmitterRateSteady,
-    EmitterRateManual,
-);
