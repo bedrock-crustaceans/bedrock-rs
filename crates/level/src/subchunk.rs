@@ -240,6 +240,11 @@ impl Hash for BlockDef {
     /// resulting values combined with a commutative fold (wrapping add), so the result
     /// depends only on the entry set, never on the order iteration happens to visit it in,
     /// without collecting the map into an intermediate `Vec` to sort first.
+    ///
+    /// Each entry's hash is mixed before the add. `FxHasher` is close to linear in what it
+    /// is fed, so unmixed sums cancel out: `north: 1, west: 0` and `north: 0, west: 1`
+    /// summed to the same value, and real glass pane, wall and stairs palettes hold such
+    /// pairs.
     fn hash<H: Hasher>(&self, state: &mut H) {
         state.write(self.name.as_bytes());
 
@@ -247,10 +252,19 @@ impl Hash for BlockDef {
             let mut entry_hasher = FxHasher::default();
             k.hash(&mut entry_hasher);
             v.hash(&mut entry_hasher);
-            acc.wrapping_add(entry_hasher.finish())
+            acc.wrapping_add(mix(entry_hasher.finish()))
         });
         state.write_u64(combined);
     }
+}
+
+/// The 64-bit finalizer of `MurmurHash3`: every input bit affects every output bit.
+const fn mix(mut h: u64) -> u64 {
+    h ^= h >> 33;
+    h = h.wrapping_mul(0xff51_afd7_ed55_8ccd);
+    h ^= h >> 33;
+    h = h.wrapping_mul(0xc4ce_b9fe_1a85_ec53);
+    h ^ (h >> 33)
 }
 
 impl Hash for PaletteEntry {
@@ -510,13 +524,11 @@ pub struct Layer {
     ///
     /// This is a fast-path cache, not a source of truth: it can hold at most one palette
     /// index per 64-bit hash, so two distinct entries that collide cannot both live in it.
-    /// [`Self::set`] handles that by verifying equality on every hash hit and falling back
-    /// to a linear scan of `palette` on mismatch -- see its doc comment. [`Self::contains`]
-    /// and [`Self::palette_index`] do not: they trust a hash hit outright, so on the same
-    /// (astronomically unlikely, birthday-bound on 64 bits) collision they can report a
-    /// false positive or return a different entry's index. Widening them the same way `set`
-    /// is widened would cost a linear scan on every lookup rather than only on collision;
-    /// left as documented behavior until a real collision is ever observed.
+    /// [`Self::set`], [`Self::palette_index`] and [`Self::contains`] handle that by
+    /// verifying equality on every hash hit and falling back to a linear scan of `palette`
+    /// on mismatch -- see `set`'s doc comment. Real worlds do hold colliding entries: before
+    /// [`BlockDef`]'s hash mixed each state, glass panes connected on different sides
+    /// summed to the same value.
     hashes: HashMap<u64, u16, BuildNoHashHasher<u64>>,
     /// The field order each *modern* `palette` entry re-encodes with, kept in lock step
     /// with `palette` by index -- both are only ever pushed to, together, in `set` and
@@ -638,22 +650,27 @@ impl Layer {
 
     /// Determines the index in the palette of the (modern) block.
     ///
-    /// Trusts a `hashes` hit outright, unlike [`Self::set`]: on the astronomically unlikely
-    /// event of a 64-bit hash collision with a different palette entry, this can return that
-    /// other entry's index instead of `None`. See the `hashes` field's doc comment.
+    /// Checks a `hashes` hit like [`Self::set`] does, and searches the palette when the
+    /// entry it points at is a different block: collisions are rare, not impossible.
     pub fn palette_index(&self, block: &BlockDef) -> Option<u16> {
         let hash = Self::hash_def(block);
-        self.hashes.get(&hash).copied()
+        let candidate = *self.hashes.get(&hash)?;
+        if self.palette[candidate as usize].as_block() == Some(block) {
+            return Some(candidate);
+        }
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "palette indices are stored as u16, so a layer's palette never exceeds u16 range"
+        )]
+        self.palette
+            .iter()
+            .position(|entry| entry.as_block() == Some(block))
+            .map(|found| found as u16)
     }
 
     /// Whether the palette contains the given (modern) block.
-    ///
-    /// Trusts a `hashes` hit outright, unlike [`Self::set`]: on the astronomically unlikely
-    /// event of a 64-bit hash collision with a different palette entry, this can report a
-    /// false positive. See the `hashes` field's doc comment.
     pub fn contains(&self, block: &BlockDef) -> bool {
-        let hash = Self::hash_def(block);
-        self.hashes.contains_key(&hash)
+        self.palette_index(block).is_some()
     }
 
     /// Returns the palette used for this chunk
@@ -1319,6 +1336,55 @@ mod palette_tests {
         assert_eq!(palette.len(), 2);
         assert_eq!(palette[0].legacy_val(), Some(0));
         assert_eq!(palette[1].legacy_val(), Some(4));
+    }
+
+    /// A glass pane connected to one side, as a palette entry in the game's field order.
+    fn glass_pane(north: i8, west: i8) -> nbtx::Value {
+        let states = nbtx::Compound::from_iter([
+            ("minecraft:connection_east".into(), nbtx::Value::Byte(0)),
+            (
+                "minecraft:connection_north".into(),
+                nbtx::Value::Byte(north),
+            ),
+            ("minecraft:connection_south".into(), nbtx::Value::Byte(0)),
+            ("minecraft:connection_west".into(), nbtx::Value::Byte(west)),
+        ]);
+        nbtx::Value::Compound(nbtx::Compound::from_iter([
+            (
+                "name".into(),
+                nbtx::Value::String("minecraft:glass_pane".into()),
+            ),
+            ("states".into(), nbtx::Value::Compound(states)),
+            ("version".into(), nbtx::Value::Int(18_168_865)),
+        ]))
+    }
+
+    /// Two different blocks in one palette are each found at their own index, and `set`
+    /// writes the block it was given. A real 1.26 world holds exactly this pair in one
+    /// layer: the pane connected north and the pane connected west.
+    #[test]
+    fn different_blocks_in_one_palette_are_found_at_their_own_index() {
+        let bytes = subchunk_with_two_entry_palette([&glass_pane(1, 0), &glass_pane(0, 1)]);
+        let mut chunk =
+            SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).unwrap();
+        let layer = chunk.get_layer_mut(0).unwrap();
+        let north = layer.palette()[0].as_block().unwrap().clone();
+        let west = layer.palette()[1].as_block().unwrap().clone();
+        assert_ne!(north, west);
+
+        assert_eq!(layer.palette_index(&north), Some(0));
+        assert_eq!(layer.palette_index(&west), Some(1));
+
+        layer.set((0, 0, 0), west.clone());
+        assert_eq!(
+            layer.get((0, 0, 0)).and_then(PaletteEntry::as_block),
+            Some(&west)
+        );
+        assert_eq!(
+            layer.palette().len(),
+            2,
+            "set added an entry already in the palette"
+        );
     }
 }
 
