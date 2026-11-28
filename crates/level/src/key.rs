@@ -27,6 +27,8 @@ pub enum KeyVariant {
     Biome3d = 0x2b,
     ChunkVersion = 0x2c,
     HeightMap = 0x2d,
+    /// `Data2DLegacy`: the old heightmap and 2D biome layout, with a colour per column.
+    LegacyHeightMap = 0x2e,
     SubChunk {
         index: i8,
     } = 0x2f,
@@ -83,6 +85,7 @@ impl KeyVariant {
             KeyVariant::Biome3d => true,
             KeyVariant::ChunkVersion => true,
             KeyVariant::HeightMap => true,
+            KeyVariant::LegacyHeightMap => true,
             KeyVariant::SubChunk { .. } => true,
             KeyVariant::LegacyTerrain => true,
             KeyVariant::BlockEntity => true,
@@ -122,6 +125,7 @@ impl KeyVariant {
             KeyVariant::Biome3d => 0x2b,
             KeyVariant::ChunkVersion => 0x2c,
             KeyVariant::HeightMap => 0x2d,
+            KeyVariant::LegacyHeightMap => 0x2e,
             KeyVariant::SubChunk { .. } => 0x2f,
             KeyVariant::LegacyTerrain => 0x30,
             KeyVariant::BlockEntity => 0x31,
@@ -387,6 +391,7 @@ impl Key {
             0x2b => KeyVariant::Biome3d,
             0x2c => KeyVariant::ChunkVersion,
             0x2d => KeyVariant::HeightMap,
+            0x2e => KeyVariant::LegacyHeightMap,
             0x30 => KeyVariant::LegacyTerrain,
             0x31 => KeyVariant::BlockEntity,
             0x32 => KeyVariant::Entity,
@@ -1044,6 +1049,29 @@ mod tests {
     }
 
     #[test]
+    fn legacy_heightmap_tag_parses_as_a_chunk_key() {
+        for dimension in [None, Some(1i32), Some(2)] {
+            let mut bytes = Vec::new();
+            bytes.extend_from_slice(&(-3i32).to_le_bytes());
+            bytes.extend_from_slice(&7i32.to_le_bytes());
+            if let Some(id) = dimension {
+                bytes.extend_from_slice(&id.to_le_bytes());
+            }
+            bytes.push(0x2e);
+
+            let key = Key::deserialize(&mut Cursor::new(bytes.as_slice()))
+                .unwrap_or_else(|e| panic!("0x2e in {dimension:?}: {e}"));
+            assert_eq!(key.data.discriminant(), 0x2e);
+            assert!(key.data.is_chunk_scoped());
+
+            let mut written = Vec::new();
+            key.serialize(&mut written).unwrap();
+            assert_eq!(written, bytes);
+            assert_eq!(key.size_hint(), bytes.len());
+        }
+    }
+
+    #[test]
     fn is_chunk_scoped_is_false_only_for_local_player() {
         assert!(!KeyVariant::LocalPlayer.is_chunk_scoped());
 
@@ -1051,6 +1079,7 @@ mod tests {
             KeyVariant::Biome3d,
             KeyVariant::ChunkVersion,
             KeyVariant::HeightMap,
+            KeyVariant::LegacyHeightMap,
             KeyVariant::SubChunk { index: 3 },
             KeyVariant::LegacyTerrain,
             KeyVariant::BlockEntity,
